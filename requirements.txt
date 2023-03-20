@@ -1,0 +1,3 @@
+sponsorblock~=0.1.3
+feedparser~=6.0.10
+moviepy~=1.0.3
