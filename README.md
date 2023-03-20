@@ -12,3 +12,4 @@ reads a list of YouTube channels and downloads any new video from said channels
 ## warnings
 
 on first run, this will download the last 7 videos of each creator. after that, it'll only download new ones unless you add a new creator in which case the last 7 videos from the new creator will be downloaded as well
+

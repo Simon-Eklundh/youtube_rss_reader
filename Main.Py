@@ -46,7 +46,8 @@ def cut_sponsored_segments(file_name, url):
 
     create_clip_file_list(file_name)
     # concatenate all the clips in order into a single video
-    subprocess.run(f"ffmpeg -safe 0 -y -f concat -i {file_name + '_list.txt'} -c copy {file_name + '.mp4'}")
+    subprocess.Popen(f"ffmpeg -safe 0 -y -f concat -i {file_name + '_list.txt'} -c copy {file_name + '.mp4'}").wait()
+
     os.remove(file_name + "_list.txt")
     for file in os.listdir():
         if file.startswith(file_name+"_"):
@@ -111,22 +112,26 @@ def download_and_sponsorblock_videos(channels, category):
 
 def download_videos(entry):
     global already_watched
-
+    print(entry['title'])
     author = re.sub(r'[^\w_.-]', '_', entry['author'])
     title = re.sub(r'[^\w_.%-]', '_', entry['title']).rstrip("_")
-    if title.startswith("Dungeon"):
-        print()
-    while title.__contains__("__"):
-        title = re.sub(r'(__)','_',title)
     new_title = re.sub(r'%', '',title)
+    while new_title.__contains__("_-_"):
+        new_title = re.sub(r'-', '_', new_title)
+    while new_title.__contains__("__"):
+        new_title = re.sub(r'(__)', '_', new_title)
+    new_title = re.sub(r'[_]'," ", new_title)
     print(title)
     if author not in already_watched:
         already_watched[author] = {}
     if title not in already_watched[author]:
         ydl_opts = setup_downloader_options()
-
         with YoutubeDL(ydl_opts) as ydl:
+            info: dict = ydl.extract_info(entry['link'], download=False)
+
+            title = info.get('title')
             ydl.download([entry['link']])
+
         # rename downloaded file to remove all disallowed characters
         os.rename(title + ".mp4", new_title + ".mp4")
         cut_sponsored_segments(title, entry['link'])
@@ -137,7 +142,7 @@ def download_videos(entry):
 
 def setup_downloader_options():
     now = datetime.now()
-    #
+    # 'restrictfilenames': 'true',
     current_time = now.strftime("%H:%M:%S")
     if "23:00:00" < current_time < "06:00:00":
         rate = 10000000000000000
@@ -148,7 +153,7 @@ def setup_downloader_options():
         'format': 'bestvideo+bestaudio/best',
         'merge_output_format': 'mp4',
         'ratelimit': rate,
-        'restrictfilenames': 'true',
+
         'match_filter': longer_than_a_minute,
     }
     return ydl_opts
