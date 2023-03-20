@@ -1,18 +1,19 @@
 import json
+import os
 import pathlib
 import re
 import subprocess
 from datetime import datetime
-from shutil import copyfile
 
 import feedparser
-import sponsorblock
 import sponsorblock as sb
 from moviepy.editor import *
 from sponsorblock import Segment
 from yt_dlp import YoutubeDL
 
 already_watched = {}
+
+start_directory = ""
 
 
 def read_file(file_name):
@@ -25,46 +26,48 @@ def read_file(file_name):
 
 def get_segments_to_remove(url):
     client = sb.Client()
-    # get sponsor segments from sponsorblock
+    # get sponsor segments from sponsorblock (including sponsors, intro, outro and interaction reminders)
     segments = client.get_skip_segments(url)
 
     return segments
 
 
 def cut_sponsored_segments(file_name, url):
-    # find file with file_name
-    # rename file with file_name to file_name but with only legal characters
-    # if segments don't exist for this file, it will crash horribly without the try-except
+    # this uses an api call which returns a 404 if the video isn't in sponsorblock. if it returns an error, we don't cut
     try:
         segments: list[Segment] = get_segments_to_remove(url)
     except:
         return
 
-    result = subprocess.check_output(
-        f'ffprobe -v quiet -show_streams -select_streams v:0 -of json {file_name + ".mp4"}',
-        shell=True).decode()
+    create_clips_of_the_parts_to_leave_in(file_name, segments)
 
-    fields = json.loads(result)['streams'][0]
-    duration = fields['duration']
-    # get sponsor segments
+    # rename_the clips despite it likely being unnecessary
+    rename_clips_in_order(file_name)
 
-    current_start = "00:00:00"
-    clip_index = 0
+    create_clip_file_list(file_name)
+    # concatenate all the clips in order into a single video
+    subprocess.run(f"ffmpeg -safe 0 -y -f concat -i {file_name + '_list.txt'} -c copy {file_name + '.mp4'}")
+    os.remove(file_name + "_list.txt")
+    for file in os.listdir():
+        if file.startswith(file_name+"_"):
+            os.remove(file)
 
-    copyfile(file_name + ".mp4", file_name + "_tmp.mp4")
 
-    for segment in segments:
-        start = segment.start
-        end = segment.end
-        subprocess.Popen(
-            f"ffmpeg -y -ss {current_start} -to {start} -i {file_name}_tmp.mp4 -c copy {file_name}_{clip_index}.mp4"
-        ).wait()
-        current_start = end
-        clip_index += 1
-
-        # concatenate the two clips
-    os.remove(file_name + "_tmp.mp4")
+def create_clip_file_list(file_name):
     files = []
+    for file in os.listdir():
+        if file.startswith(file_name + "_"):
+            files.append(file)
+    # sorting is actually unnecessary but it's for good measure
+    files.sort()
+    # open file_name_list.txt and write the list of files to it
+    with open(file_name + "_list.txt", 'a') as file:
+        for f in files:
+            file.write(f"file '{f}'\n")
+
+
+def rename_clips_in_order(file_name):
+
     clip_index = 0
     file_dict = {}
     for file in os.listdir():
@@ -75,18 +78,19 @@ def cut_sponsored_segments(file_name, url):
     for file in file_dict:
         os.rename(file_dict[file], file)
 
-    for file in os.listdir():
-        if file.startswith(file_name + "_"):
-            files.append(file)
-    files.sort()
 
-    # open file_name_list.txt and write the list of files to it
-    with open(file_name + "_list.txt", 'a') as file:
-        for f in files:
-            file.write(f"file '{f}'\n")
 
-    subprocess.run(f"ffmpeg -safe 0 -y -f concat -i {file_name + '_list.txt'} -c copy {file_name + '.mp4'}")
-    os.remove(file_name + "_list.txt")
+def create_clips_of_the_parts_to_leave_in(file_name, segments):
+    current_start = "00:00:00"
+    clip_index = 0
+    for segment in segments:
+        start = segment.start
+        end = segment.end
+        subprocess.Popen(
+            f"ffmpeg -y -ss {current_start} -to {start} -i {file_name}.mp4 -c copy {file_name}_{clip_index}.mp4"
+        ).wait()
+        current_start = end
+        clip_index += 1
 
 
 def download_and_sponsorblock_videos(channels, category):
@@ -107,9 +111,15 @@ def download_and_sponsorblock_videos(channels, category):
 
 def download_videos(entry):
     global already_watched
+
     author = re.sub(r'[^\w_.-]', '_', entry['author'])
-    title = re.sub(r'[^\w_.%-]', '_', entry['title'])
-    new_title = re.sub(r'%', '', entry['title'])
+    title = re.sub(r'[^\w_.%-]', '_', entry['title']).rstrip("_")
+    if title.startswith("Dungeon"):
+        print()
+    while title.__contains__("__"):
+        title = re.sub(r'(__)','_',title)
+    new_title = re.sub(r'%', '',title)
+    print(title)
     if author not in already_watched:
         already_watched[author] = {}
     if title not in already_watched[author]:
@@ -118,17 +128,19 @@ def download_videos(entry):
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download([entry['link']])
         # rename downloaded file to remove all disallowed characters
-        os.rename(title+".mp4", new_title+".mp4")
+        os.rename(title + ".mp4", new_title + ".mp4")
         cut_sponsored_segments(title, entry['link'])
         already_watched[author][title] = 1
         print("New video from " + author + ": " + title + " has been downloaded")
+    save_downloaded_list()
 
 
 def setup_downloader_options():
     now = datetime.now()
+    #
     current_time = now.strftime("%H:%M:%S")
     if "23:00:00" < current_time < "06:00:00":
-        rate = 1000000000000
+        rate = 10000000000000000
     else:
         rate = 10000000
     ydl_opts = {
@@ -150,6 +162,10 @@ def longer_than_a_minute(info, *, incomplete):
 
 
 def main():
+    global start_directory
+    start_directory = os.getcwd()
+    get_already_watched()
+
     channel_file_dict = read_channel_lists()
 
     download_dir = f"{os.path.expanduser('~')}/Videos/Youtube"
@@ -157,28 +173,38 @@ def main():
 
     # for each entry in channel_file_dict
     for channel in channel_file_dict:
-        download_and_sponsorblock_videos(channel_file_dict[channel], channel.title())
+        download_and_sponsorblock_videos(channel_file_dict[channel], channel.strip(".txt"))
 
-    save_downloaded_list()
+
+
+
+def get_already_watched():
+    try:
+        f = open("watched.json")
+        global already_watched
+        already_watched = json.load(f)
+    except FileNotFoundError:
+        already_watched = {}
+
 
 
 def save_downloaded_list():
-    f = open("watched.json")
     global already_watched
-    already_watched = json.load(f)
-    with open('watched.json', 'w') as outfile:
+    with open(start_directory+'/watched.json', 'w') as outfile:
         json.dump(already_watched, outfile)
 
 
 def read_channel_lists():
-
     channel_file_dict = {}
     for channel_file in os.listdir("categories"):
-        channel_file_dict[channel_file.strip()] = read_file("categories/"+channel_file.strip())
+        channel_file_dict[channel_file.strip()] = read_file("categories/" + channel_file.strip())
     return channel_file_dict
+
+
 
 
 if __name__ == '__main__':
     main()
+
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
