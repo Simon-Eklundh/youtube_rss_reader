@@ -1,10 +1,9 @@
 import json
-import os
 import pathlib
 import re
 import subprocess
 from datetime import datetime
-
+from unidecode import unidecode
 import feedparser
 import sponsorblock as sb
 from moviepy.editor import *
@@ -67,17 +66,29 @@ def create_clip_file_list(file_name):
             file.write(f"file '{f}'\n")
 
 
+# because python sorts files like this: file_1.mp4 file_10.mp4 file_2.mp4, we force python to sort by int
+def fileSorter(e:str):
+    out = e.split("_")
+    key: int = int(out[len(out) - 1].split(".")[0])
+    return key
+
 def rename_clips_in_order(file_name):
 
+    files = []
     clip_index = 0
     file_dict = {}
     for file in os.listdir():
-        if file.startswith(file_name + "_"):
-            new_file_name = file_name + "_" + str(clip_index) + ".mp4"
-            clip_index += 1
-            file_dict[new_file_name] = file
+        if file.startswith(file_name + "_") and file.endswith(".mp4"):
+            files.append(file)
+    files.sort(key=fileSorter)
+
+    for file in files:
+        new_file_name = file_name + "_" + str(clip_index) + ".mp4"
+        clip_index += 1
+        file_dict[new_file_name] = file
     for file in file_dict:
         os.rename(file_dict[file], file)
+
 
 
 
@@ -112,37 +123,43 @@ def download_and_sponsorblock_videos(channels, category):
 
 def download_videos(entry):
     global already_watched
-    print(entry['title'])
+
+    title = re.sub(":",'_-',entry['title'])
     author = re.sub(r'[^\w_.-]', '_', entry['author'])
-    title = re.sub(r'[^\w_.%-]', '_', entry['title']).rstrip("_")
+    title = re.sub(r'[^\w_.%-]', '_', title).rstrip("_").lstrip("_")
+
+    title = unidecode(title                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 )
+    while title.__contains__("__"):
+        title = re.sub(r'(__)', '_', title)
     new_title = re.sub(r'%', '',title)
     while new_title.__contains__("_-_"):
         new_title = re.sub(r'-', '_', new_title)
     while new_title.__contains__("__"):
         new_title = re.sub(r'(__)', '_', new_title)
     new_title = re.sub(r'[_]'," ", new_title)
-    print(title)
+
     if author not in already_watched:
         already_watched[author] = {}
-    if title not in already_watched[author]:
+    if new_title not in already_watched[author]:
         ydl_opts = setup_downloader_options()
         with YoutubeDL(ydl_opts) as ydl:
-            info: dict = ydl.extract_info(entry['link'], download=False)
-
-            title = info.get('title')
-            ydl.download([entry['link']])
+            try:
+                ydl.download([entry['link']])
+            except:
+                return
 
         # rename downloaded file to remove all disallowed characters
-        os.rename(title + ".mp4", new_title + ".mp4")
+
         cut_sponsored_segments(title, entry['link'])
-        already_watched[author][title] = 1
-        print("New video from " + author + ": " + title + " has been downloaded")
+        os.rename(title + ".mp4", new_title + ".mp4")
+        already_watched[author][new_title] = 1
+        print("New video from " + author + ": " + new_title + " has been downloaded")
     save_downloaded_list()
 
 
 def setup_downloader_options():
     now = datetime.now()
-    # 'restrictfilenames': 'true',
+    #
     current_time = now.strftime("%H:%M:%S")
     if "23:00:00" < current_time < "06:00:00":
         rate = 10000000000000000
@@ -153,7 +170,7 @@ def setup_downloader_options():
         'format': 'bestvideo+bestaudio/best',
         'merge_output_format': 'mp4',
         'ratelimit': rate,
-
+        'restrictfilenames': 'true',
         'match_filter': longer_than_a_minute,
     }
     return ydl_opts
@@ -188,7 +205,7 @@ def get_already_watched():
         f = open("watched.json")
         global already_watched
         already_watched = json.load(f)
-    except FileNotFoundError:
+    except:
         already_watched = {}
 
 
