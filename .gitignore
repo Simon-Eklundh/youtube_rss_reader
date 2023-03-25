@@ -1,3 +1,5 @@
 /categories/*
 
 /watched.json
+/ignored.json
+/categories/

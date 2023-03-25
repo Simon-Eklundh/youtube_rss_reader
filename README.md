@@ -6,11 +6,16 @@ reads a list of YouTube channels (by channel ids) and downloads any new video fr
 - create one or more text files (.txt) in the categories directory
 - in these files, add each channel's id (as found here https://commentpicker.com/youtube-channel-id.php for example) on its own individual line
 - run the program.
-- you'll find your videos under [your user directory]/Videos/Youtube/category where each text file is its own category eg. Gaming.txt -> a folder called Gaming
+- you'll find your videos under [your user directory]/Videos/Youtube/category/uploader where each text file is its own category eg. Gaming.txt -> a folder called Gaming
 - to get the newest videos, rerun this program, and it'll only download the new videos (not in)
  
 
 ## Information
+
+### Requests for additional features
+
+- add an issue
+- or make a pull request
 
 ### Example files
 
@@ -51,7 +56,8 @@ the box to copy the id from:
 
 on first run, this will download the last 7 or so videos of each creator. after that, it'll only download new ones unless you add a new creator in which case the last 7 videos from the new creator will be downloaded as well.
 this is a knowing choice and will likely not change (although an added option to only download the absolute newest might be added at a later date)
-
+IF you download two different videos with the same name, from the same creator (extremely unlikely) something might go wrong
+ 
 ## Requirements
 Python 3.6 or higher
 pip
@@ -68,3 +74,15 @@ all the requirements in the requirements.txt file
 - if the problem is related to a specific video, please include the video's url in the issue
 - if the problem is related to a specific channel, please include the channel's url in the issue
 - if the problem is not related to a specific video or channel, please include the error message in the issue
+
+## Current state of project
+
+seemingly working correctly, seems to handle most video titles correctly. 
+
+### Todo:
+
+- refactoring of comments
+- refactoring of methods and prettifying
+- preferably a reduction in calls to sponsorblock (will likely be left as is for now)
+- add options that allow the user to configure the common options
+- fix the time based download speed option (and add that as an option to the user)
