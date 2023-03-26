@@ -59,6 +59,8 @@ def file_sorter(e: str):
 
 def normalize(title):
     title = re.sub("[—°]", "_", title)
+    title = re.sub("'s", "_is", title)
+    title = re.sub("'d", "_would", title)
     title = unidecode(title)
     title = re.sub(":", '_-', title)
     title = re.sub(r"[^\w_.%+@-]", '_', title)
