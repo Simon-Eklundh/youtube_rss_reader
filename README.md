@@ -54,19 +54,19 @@ the box to copy the id from:
 
 ## Warnings
 
-on first run, this will download the last 7 or so videos of each creator. after that, it'll only download new ones unless you add a new creator in which case the last 7 videos from the new creator will be downloaded as well.
-this is a knowing choice and will likely not change (although an added option to only download the absolute newest might be added at a later date)
+on first run, this will download the last 7 or so videos of each creator. after that, it'll only download new ones unless you add a new creator in which case the last 7 videos from the new creator will be downloaded as well.   
+this is a knowing choice and will likely not change (although an added option to only download the absolute newest might be added at a later date)  
 IF you download two different videos with the same name, from the same creator (extremely unlikely) something might go wrong
  
 ## Requirements
-Python 3.6 or higher
-pip
-all the requirements in the requirements.txt file
+Python 3.6 or higher  
+pip  
+all the requirements in the requirements.txt file  
 
 ## Installation
 
 - clone this repository
-- install the requirements
+- install the requirements (pip install -r requirements.txt)
 
 ## How to report bugs
 
@@ -75,9 +75,14 @@ all the requirements in the requirements.txt file
 - if the problem is related to a specific channel, please include the channel's url in the issue
 - if the problem is not related to a specific video or channel, please include the error message in the issue
 
+## Feature requests
+
+- create a pull-request if you've written it already
+- or create an issue otherwise
+
 ## Current state of project
 
-seemingly working correctly, seems to handle most video titles correctly. 
+seemingly working correctly, should handle most video titles correctly. 
 
 ### Todo:
 
@@ -85,4 +90,4 @@ seemingly working correctly, seems to handle most video titles correctly.
 - refactoring of methods and prettifying
 - preferably a reduction in calls to sponsorblock (will likely be left as is for now)
 - add options that allow the user to configure the common options
-- fix the time based download speed option (and add that as an option to the user)
+- add the option to turn off rate-limiting as well as to set times for rate limiting
