@@ -85,4 +85,4 @@ seemingly working correctly, seems to handle most video titles correctly.
 - refactoring of methods and prettifying
 - preferably a reduction in calls to sponsorblock (will likely be left as is for now)
 - add options that allow the user to configure the common options
-- fix the time based download speed option (and add that as an option to the user)
+- add the option to turn off rate-limiting as well as to set times for rate limiting
