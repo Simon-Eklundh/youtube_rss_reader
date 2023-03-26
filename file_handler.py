@@ -6,8 +6,6 @@ already_watched = {}
 ignored = {}
 
 
-
-
 def read_file(file_name):
     # open the file and read its lines into an array
     with open(file_name, 'r') as file:

@@ -1,7 +1,7 @@
 import os
 import pathlib
 import re
-from datetime import time, datetime, timezone
+from datetime import time, datetime
 
 from yt_dlp import YoutubeDL
 
@@ -52,22 +52,8 @@ def download_videos(entry):
             except:
                 os.chdir("../")
                 return
-
-        files = os.listdir(".")
-        names = title.split("_")
-        name_combination = ""
-
-        for name in names:
-            name_combination += name
-
-            files = list(filter(lambda x: x.startswith(name_combination) and x.endswith('.mp4'), files))
-
-            if len(files) == 1:
-                break
-            if len(files) == 0:
-                raise FileNotFoundError("something went wrong, please create an issue")
-            name_combination += "_"
-        actual_file = files[0]
+        link = entry['link']
+        actual_file = method_name(entry, link)
         cut_sponsored_segments(actual_file, entry['link'])
 
         os.rename(actual_file, new_title + ".mp4")
@@ -77,6 +63,24 @@ def download_videos(entry):
     save_downloaded_list()
     save_ignored()
 
+
+def method_name(link, title):
+    files = os.listdir(".")
+    names = title.split("_")
+    name_combination = ""
+    for name in names:
+        tmp = files
+        files = list(filter(lambda x: name in x and x.endswith('.mp4'), files))
+        if len(files) == 0:
+            files = tmp
+
+        if len(files) == 1:
+            break
+        if len(files) == 0:
+            raise FileNotFoundError("something went wrong, please create an issue with the link: " + link['link'])
+        name_combination += "_"
+    actual_file = files[0]
+    return actual_file
 
 
 def get_rate():
@@ -92,7 +96,6 @@ def get_rate():
         if check_time >= begin_time or check_time <= end_time:
             return rate
     return alternative_rate
-
 
 
 def setup_downloader_options():
@@ -115,4 +118,3 @@ def longer_than_a_minute(info, *, incomplete):
     duration = info.get('duration')
     if duration and duration < 60:  # <= after fix of ...
         return 'The video is too short'
-

@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+
 import sponsorblock as sb
 from unidecode import unidecode
 
@@ -48,11 +49,9 @@ def create_clip_file_list(file_name):
             file.write(f"file '{f}'\n")
 
 
-
-
 # because python sorts files like this: file_1.mp4 file_10.mp4 file_2.mp4, we force python to sort by the "part number"
 # in other words: sort by X where X is a number in file_X.mp4
-def fileSorter(e: str):
+def file_sorter(e: str):
     out = e.split("_")
     key: int = int(out[len(out) - 1].split(".")[0])
     return key
@@ -63,12 +62,14 @@ def normalize(title):
     title = unidecode(title)
     title = re.sub(":", '_-', title)
     title = re.sub(r"[^\w_.%+@-]", '_', title)
-    while title.__contains__("__"):
+    while "__" in title:
         title = re.sub(r'(__)', '_', title)
     while title.startswith("'") or title.startswith("_") or title.endswith("-") or title.endswith("_"):
         title = title.strip("_").strip("-")
 
     return title
+
+
 def rename_clips_in_order(file_name):
     files = []
     clip_index = 0
@@ -76,7 +77,7 @@ def rename_clips_in_order(file_name):
     for file in os.listdir():
         if file.startswith(file_name + "_") and file.endswith(".mp4"):
             files.append(file)
-    files.sort(key=fileSorter)
+    files.sort(key=file_sorter)
 
     for file in files:
         new_file_name = file_name + "_" + str(clip_index) + ".mp4"
