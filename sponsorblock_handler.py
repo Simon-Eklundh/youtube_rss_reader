@@ -28,7 +28,7 @@ def cut_sponsored_segments(file_name, url):
 
     create_clip_file_list(file_name)
     # concatenate all the clips in order into a single video
-    subprocess.Popen(f"ffmpeg -safe 0 -y -f concat -i {file_name + '_list.txt'} -c copy {file_name + '.mp4'}").wait()
+    subprocess.call(f"ffmpeg -safe 0 -y -f concat -i {file_name + '_list.txt'} -c copy {file_name + '.webm'}")
 
     os.remove(file_name + "_list.txt")
     for file in os.listdir():
@@ -59,6 +59,7 @@ def file_sorter(e: str):
 
 def normalize(title):
     title = re.sub("[—°]", "_", title)
+    title = re.sub("(let's)", "let_us", title, flags=re.IGNORECASE)
     title = re.sub("'s", "_is", title)
     title = re.sub("'d", "_would", title)
     title = unidecode(title)
@@ -77,12 +78,12 @@ def rename_clips_in_order(file_name):
     clip_index = 0
     file_dict = {}
     for file in os.listdir():
-        if file.startswith(file_name + "_") and file.endswith(".mp4"):
+        if file.startswith(file_name + "_") and file.endswith(".webm"):
             files.append(file)
     files.sort(key=file_sorter)
 
     for file in files:
-        new_file_name = file_name + "_" + str(clip_index) + ".mp4"
+        new_file_name = file_name + "_" + str(clip_index) + ".webm"
         clip_index += 1
         file_dict[new_file_name] = file
     for file in file_dict:
@@ -95,8 +96,8 @@ def create_clips_of_the_parts_to_leave_in(file_name, segments):
     for segment in segments:
         start = segment.start
         end = segment.end
-        subprocess.Popen(
-            f"ffmpeg -y -ss {current_start} -to {start} -i {file_name}.mp4 -c copy {file_name}_{clip_index}.mp4"
-        ).wait()
+        subprocess.call(
+            f"ffmpeg -y -ss {current_start} -to {start} -i {file_name}.webm -c copy {file_name}_{clip_index}.webm"
+        )
         current_start = end
         clip_index += 1

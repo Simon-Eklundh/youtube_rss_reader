@@ -4,6 +4,9 @@ import os
 config_directory = os.getcwd()
 already_watched = {}
 ignored = {}
+broken_videos: dict[str, list] = {}
+
+
 
 
 def read_file(file_name):
@@ -56,3 +59,18 @@ def get_already_watched():
 
 def get_ignored():
     return ignored
+
+def read_not_working_videos():
+    try:
+        f = open("broken.json")
+        global broken_videos
+        broken_videos = json.load(f)
+    except:
+        broken_videos = {}
+
+def get_broken_videos():
+    return broken_videos
+
+def save_broken_videos():
+    with open(config_directory + '/broken.json', 'w') as outfile:
+        json.dump(broken_videos, outfile)

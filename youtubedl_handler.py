@@ -1,12 +1,40 @@
 import os
 import pathlib
 import re
+import shutil
 from datetime import time, datetime
+from typing import Dict, Any
 
 from yt_dlp import YoutubeDL
 
-from file_handler import get_already_watched, get_ignored, save_downloaded_list, save_ignored
+from file_handler import get_already_watched, get_ignored, save_downloaded_list, save_ignored, get_broken_videos, save_broken_videos
 from sponsorblock_handler import normalize, cut_sponsored_segments
+
+
+# tmp
+
+
+def is_in_fail_categories(link):
+    broken_videos = get_broken_videos()
+    for category in broken_videos:
+        if link in broken_videos[category]:
+            return True
+    return False
+
+
+def add_to_fail_category(error: Exception, entry):
+    broken_videos = get_broken_videos()
+    if "ERROR: Postprocessing" in error.args[0]:
+        key = "Postprocessing"
+    elif "Video unavailable. The uploader has not made this video available in your country" in error.args[0]:
+        key = "regionlocked"
+    else:
+        print(error)
+        raise NotImplementedError
+    if key not in broken_videos:
+        broken_videos[key] = []
+    broken_videos[key].append(entry['link'])
+    save_broken_videos()
 
 
 def download_videos(entry):
@@ -16,14 +44,16 @@ def download_videos(entry):
     # this is because youtube added shorts, and they are just bad in 90% of cases
     ignored = get_ignored()
     already_watched = get_already_watched()
+    if is_in_fail_categories(entry['link']):
+        return
     if title_key in ignored:
         return
     if author_key not in already_watched:
         already_watched[author_key] = {}
-
+    # todo add skip keywords
     if title_key not in already_watched[author_key]:
         # todo add option to add country blocked videos to ignored
-        with YoutubeDL() as ydl:
+        with YoutubeDL({"quiet": "true"}) as ydl:
             try:
                 test = ydl.extract_info(entry['link'], download=False)
                 title = test['title']
@@ -35,28 +65,42 @@ def download_videos(entry):
                     print(f"{entry['title']} is a short, skipping")
                     ignored[title_key] = 1
                     return
-            except:
+            except Exception as error:
+                print("failed download:" + entry['title'] + " " + entry['link'])
+                add_to_fail_category(error, entry)
                 return
         if pathlib.Path(author).is_dir() is False:
             pathlib.Path(author).mkdir(parents=True, exist_ok=True)
         os.chdir(author)
+
         title = normalize(title)
         new_title = re.sub("_", " ", title)
         # this is only for debugging
         old_title = title
         ydl_opts = setup_downloader_options()
-
+        print(f"downloading {new_title} by {author}")
         with YoutubeDL(ydl_opts) as ydl:
             try:
+                os.mkdir("tmp")
+                os.chdir("tmp")
                 ydl.download([entry['link']])
-            except:
+            except Exception as e:
                 os.chdir("../")
+                shutil.rmtree("./tmp")
+                os.chdir("../")
+                add_to_fail_category(e, entry)
+                print("failed download:" + entry['title'] + " " + entry['link'])
                 return
+
         link = entry['link']
-        actual_file = method_name(entry, link)
+        actual_file = get_file_name(entry, link)
         cut_sponsored_segments(actual_file, entry['link'])
 
-        os.rename(actual_file, new_title + ".mp4")
+        os.rename(actual_file, new_title + ".webm")
+        shutil.copy(new_title + ".webm", "../" + new_title + ".webm")
+        print(os.listdir())
+        os.chdir("../")
+        os.rmdir("tmp")
         already_watched[author][title_key] = 1
         os.chdir("..")
         print("New video from " + author + ": " + new_title + " has been downloaded")
@@ -64,13 +108,13 @@ def download_videos(entry):
     save_ignored()
 
 
-def method_name(link, title):
+def get_file_name(link, title):
     files = os.listdir(".")
     names = title.split("_")
     name_combination = ""
     for name in names:
         tmp = files
-        files = list(filter(lambda x: name in x and x.endswith('.mp4'), files))
+        files = list(filter(lambda x: name in x and x.endswith('.webm'), files))
         if len(files) == 0:
             files = tmp
 
@@ -100,15 +144,14 @@ def get_rate():
 
 def setup_downloader_options():
     rate = get_rate()
-    print(rate)
     ydl_opts = {}
     ydl_opts['outtmpl'] = '%(title)s.%(ext)s'
     ydl_opts['format'] = 'bestvideo+bestaudio/best'
-    ydl_opts['merge_output_format'] = 'mp4'
+    ydl_opts['merge_output_format'] = 'webm'
     ydl_opts['ratelimit'] = rate
     ydl_opts['restrictfilenames'] = 'true'
     ydl_opts['match_filter'] = longer_than_a_minute
-
+    ydl_opts['quiet'] = 'true'
     return ydl_opts
 
 

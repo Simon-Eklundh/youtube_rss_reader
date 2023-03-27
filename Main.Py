@@ -1,10 +1,11 @@
 import pathlib
 
 import feedparser
+import yt_dlp
 from moviepy.editor import *
 from yt_dlp import YoutubeDL
 
-from file_handler import read_already_watched, read_ignored, read_channel_lists
+from file_handler import read_already_watched, read_ignored, read_channel_lists, read_not_working_videos
 from youtubedl_handler import download_videos
 
 
@@ -27,6 +28,7 @@ def download_and_sponsorblock_videos(channels, category):
 def main():
     read_already_watched()
     read_ignored()
+    read_not_working_videos()
 
     channel_file_dict = read_channel_lists()
 
@@ -42,18 +44,24 @@ def main():
 # and ignore it or add to list of regionlocked
 # if you want to use a vpn
 def tester():
-    with YoutubeDL() as ydl:
+    #help(yt_dlp.YoutubeDL)
+    opt = {
+        "quiet" : "true"
+    }
+    with YoutubeDL(opt) as ydl:
         try:
-            test = ydl.extract_info("https://www.youtube.com/watch?v=aAZy4Un5ipo", download=False)
-            print(test)
+            ydl.extract_info("https://www.youtube.com/watch?v=aAZy4Un5ipo", download=False)
 
+        # todo create regionlocked list and make an option to skip regionlocked videos
+        # todo create different lists for different blocked videos and skip them like ignored
+        # todo add option to rerun blocked videos of all kinds (excluding shorts)
         except Exception as e:
-            print(e.args[0].endswith("The uploader has not made this video available in your country"))
+
             return
 
 
 if __name__ == '__main__':
-    main()
-    # tester()
+     main()
+     #tester()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
