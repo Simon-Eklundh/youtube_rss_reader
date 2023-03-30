@@ -30,7 +30,6 @@ def cut_sponsored_segments(file_name, url):
     # concatenate all the clips in order into a single video
     subprocess.call(f"ffmpeg -safe 0 -y -f concat -i {file_name + '_list.txt'} -c copy {file_name + '.webm'}")
 
-    os.remove(file_name + "_list.txt")
     for file in os.listdir():
         if file.startswith(file_name + "_"):
             os.remove(file)
@@ -57,7 +56,12 @@ def file_sorter(e: str):
     return key
 
 
-def normalize(title):
+def normalize(title:str):
+
+    for string in title.split():
+        if not string.isascii():
+            title = title.replace(string, "")
+
     title = re.sub("[—°]", "_", title)
     title = re.sub("(let's)", "let_us", title, flags=re.IGNORECASE)
     title = re.sub("'s", "_is", title)
@@ -92,12 +96,20 @@ def rename_clips_in_order(file_name):
 
 def create_clips_of_the_parts_to_leave_in(file_name, segments):
     current_start = "00:00:00"
-    clip_index = 0
+    os.rename(file_name+".webm", file_name+"_0.webm")
+    clip_index = 1
     for segment in segments:
         start = segment.start
         end = segment.end
+
         subprocess.call(
-            f"ffmpeg -y -ss {current_start} -to {start} -i {file_name}.webm -c copy {file_name}_{clip_index}.webm"
+            f"ffmpeg -y -ss {current_start} -to {start} -i {file_name}_{clip_index-1}.webm -c copy {file_name}_{clip_index}.webm"
         )
+        clip_index += 1
+        subprocess.call(
+            f"ffmpeg -y -ss {end} -i {file_name}_{clip_index - 2}.webm -c copy {file_name}_{clip_index}.webm"
+        )
+        if os.path.exists(f"{file_name}_{clip_index -2}.webm"):
+            os.remove(f"{file_name}_{clip_index -2}.webm")
         current_start = end
         clip_index += 1

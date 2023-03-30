@@ -1,11 +1,11 @@
 import pathlib
 
 import feedparser
-import yt_dlp
 from moviepy.editor import *
 from yt_dlp import YoutubeDL
 
-from file_handler import read_already_watched, read_ignored, read_channel_lists, read_not_working_videos
+from file_handler import read_already_watched, read_ignored, read_channel_lists, read_not_working_videos, \
+    read_keywords_to_skip
 from youtubedl_handler import download_videos
 
 
@@ -29,6 +29,7 @@ def main():
     read_already_watched()
     read_ignored()
     read_not_working_videos()
+    read_keywords_to_skip()
 
     channel_file_dict = read_channel_lists()
 
@@ -44,9 +45,9 @@ def main():
 # and ignore it or add to list of regionlocked
 # if you want to use a vpn
 def tester():
-    #help(yt_dlp.YoutubeDL)
+    # help(yt_dlp.YoutubeDL)
     opt = {
-        "quiet" : "true"
+        "quiet": "true"
     }
     with YoutubeDL(opt) as ydl:
         try:
@@ -61,7 +62,7 @@ def tester():
 
 
 if __name__ == '__main__':
-     main()
-     #tester()
+    main()
+    # tester()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

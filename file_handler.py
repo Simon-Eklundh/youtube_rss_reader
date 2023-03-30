@@ -5,8 +5,7 @@ config_directory = os.getcwd()
 already_watched = {}
 ignored = {}
 broken_videos: dict[str, list] = {}
-
-
+keywords_to_skip: dict[str, list] = {}
 
 
 def read_file(file_name):
@@ -60,6 +59,7 @@ def get_already_watched():
 def get_ignored():
     return ignored
 
+
 def read_not_working_videos():
     try:
         f = open("broken.json")
@@ -68,9 +68,24 @@ def read_not_working_videos():
     except:
         broken_videos = {}
 
+
 def get_broken_videos():
     return broken_videos
+
 
 def save_broken_videos():
     with open(config_directory + '/broken.json', 'w') as outfile:
         json.dump(broken_videos, outfile)
+
+
+def read_keywords_to_skip():
+    try:
+        f = open("skip.json")
+        global keywords_to_skip
+        keywords_to_skip = json.load(f)
+    except:
+        keywords_to_skip = {}
+
+
+def get_keywords_to_skip():
+    return keywords_to_skip

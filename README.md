@@ -83,6 +83,8 @@ all the requirements in the requirements.txt file
 ## Current state of project
 
 seemingly working correctly, should handle most video titles correctly. 
+will likely not work if your youtuber uploads videos with no latin characters or multiple ones with similar latin names
+but different korean signs for example
 program creates a temporary directory while downloading videos and then deletes it afterwards.
 if a video fails, it's added to a list of broken videos and ignored. same with shorts as of now.
 

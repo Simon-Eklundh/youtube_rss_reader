@@ -2,16 +2,14 @@ import os
 import pathlib
 import re
 import shutil
+import subprocess
 from datetime import time, datetime
-from typing import Dict, Any
 
 from yt_dlp import YoutubeDL
 
-from file_handler import get_already_watched, get_ignored, save_downloaded_list, save_ignored, get_broken_videos, save_broken_videos
+from file_handler import get_already_watched, get_ignored, save_downloaded_list, save_ignored, get_broken_videos, \
+    save_broken_videos, get_keywords_to_skip
 from sponsorblock_handler import normalize, cut_sponsored_segments
-
-
-# tmp
 
 
 def is_in_fail_categories(link):
@@ -28,6 +26,13 @@ def add_to_fail_category(error: Exception, entry):
         key = "Postprocessing"
     elif "Video unavailable. The uploader has not made this video available in your country" in error.args[0]:
         key = "regionlocked"
+    elif "Join this channel to get access to members-only content like this video, and other exclusive perks." in \
+            error.args[0]:
+        key = "membersonly"
+    elif "This live event will begin" in error.args[0]:
+        return
+    elif "Video unavailable. This video is not available" in error.args[0]:
+        key = "removed"
     else:
         print(error)
         raise NotImplementedError
@@ -44,15 +49,22 @@ def download_videos(entry):
     # this is because youtube added shorts, and they are just bad in 90% of cases
     ignored = get_ignored()
     already_watched = get_already_watched()
+    keywords_to_skip = get_keywords_to_skip()
+
     if is_in_fail_categories(entry['link']):
         return
     if title_key in ignored:
         return
+    if author_key in keywords_to_skip:
+        for keyword in keywords_to_skip[author_key]:
+            if keyword in title_key:
+                print("keyword: " + keyword + " is in " + title_key + " by " + entry['author'] + ", skipping")
+                return
     if author_key not in already_watched:
         already_watched[author_key] = {}
-    # todo add skip keywords
+
     if title_key not in already_watched[author_key]:
-        # todo add option to add country blocked videos to ignored
+
         with YoutubeDL({"quiet": "true"}) as ydl:
             try:
                 test = ydl.extract_info(entry['link'], download=False)
@@ -72,7 +84,6 @@ def download_videos(entry):
         if pathlib.Path(author).is_dir() is False:
             pathlib.Path(author).mkdir(parents=True, exist_ok=True)
         os.chdir(author)
-
         title = normalize(title)
         new_title = re.sub("_", " ", title)
         # this is only for debugging
@@ -81,26 +92,20 @@ def download_videos(entry):
         print(f"downloading {new_title} by {author}")
         with YoutubeDL(ydl_opts) as ydl:
             try:
-                os.mkdir("tmp")
-                os.chdir("tmp")
                 ydl.download([entry['link']])
             except Exception as e:
-                os.chdir("../")
-                shutil.rmtree("./tmp")
+
                 os.chdir("../")
                 add_to_fail_category(e, entry)
                 print("failed download:" + entry['title'] + " " + entry['link'])
                 return
-
+            
         link = entry['link']
-        actual_file = get_file_name(entry, link)
-        cut_sponsored_segments(actual_file, entry['link'])
 
-        os.rename(actual_file, new_title + ".webm")
-        shutil.copy(new_title + ".webm", "../" + new_title + ".webm")
-        print(os.listdir())
-        os.chdir("../")
-        os.rmdir("tmp")
+        # todo reduce this or remove the tmp creation (probably the tmp creation)
+        actual_file = get_file_name(title, link)
+        cut_sponsored_segments(re.sub("(.webm)", "", actual_file), entry['link'])
+        os.rename(actual_file, new_title+".webm")
         already_watched[author][title_key] = 1
         os.chdir("..")
         print("New video from " + author + ": " + new_title + " has been downloaded")
@@ -108,10 +113,9 @@ def download_videos(entry):
     save_ignored()
 
 
-def get_file_name(link, title):
+def get_file_name(title, link):
     files = os.listdir(".")
     names = title.split("_")
-    name_combination = ""
     for name in names:
         tmp = files
         files = list(filter(lambda x: name in x and x.endswith('.webm'), files))
@@ -122,7 +126,7 @@ def get_file_name(link, title):
             break
         if len(files) == 0:
             raise FileNotFoundError("something went wrong, please create an issue with the link: " + link['link'])
-        name_combination += "_"
+
     actual_file = files[0]
     return actual_file
 
