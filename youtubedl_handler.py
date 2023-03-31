@@ -1,8 +1,6 @@
 import os
 import pathlib
 import re
-import shutil
-import subprocess
 from datetime import time, datetime
 
 from yt_dlp import YoutubeDL
@@ -42,6 +40,15 @@ def add_to_fail_category(error: Exception, entry):
     save_broken_videos()
 
 
+def get_new_title(new_title):
+    count = 0
+    tmp = new_title + "_" + str(count) + ".webm"
+    while tmp in os.listdir():
+        count += 1
+        tmp = new_title + "_" + str(count) + ".webm"
+    return tmp
+
+
 def download_videos(entry):
     title_key = entry['title']
     author_key = entry['author']
@@ -50,7 +57,6 @@ def download_videos(entry):
     ignored = get_ignored()
     already_watched = get_already_watched()
     keywords_to_skip = get_keywords_to_skip()
-
     if is_in_fail_categories(entry['link']):
         return
     if title_key in ignored:
@@ -70,10 +76,12 @@ def download_videos(entry):
                 test = ydl.extract_info(entry['link'], download=False)
                 title = test['title']
                 author = test['uploader']
-
+                if "live_status" in test and test['live_status'] == "is_live":
+                    print("livestream is still live")
+                    return
                 # todo make this default but turnoff-able
                 # this is actually covered by an option in ydl opts but this way we don't need to do a poll over internet
-                if test['duration'] <= 60:
+                if 'duration' in test and test['duration'] <= 60:
                     print(f"{entry['title']} is a short, skipping")
                     ignored[title_key] = 1
                     return
@@ -84,8 +92,10 @@ def download_videos(entry):
         if pathlib.Path(author).is_dir() is False:
             pathlib.Path(author).mkdir(parents=True, exist_ok=True)
         os.chdir(author)
-        title = normalize(title)
-        new_title = re.sub("_", " ", title)
+        title = normalize(title_key)
+        new_title = re.sub("_s_", "s_", title)
+        new_title = re.sub("_", " ", new_title)
+
         # this is only for debugging
         old_title = title
         ydl_opts = setup_downloader_options()
@@ -99,13 +109,15 @@ def download_videos(entry):
                 add_to_fail_category(e, entry)
                 print("failed download:" + entry['title'] + " " + entry['link'])
                 return
-            
-        link = entry['link']
 
+        link = entry['link']
         # todo reduce this or remove the tmp creation (probably the tmp creation)
         actual_file = get_file_name(title, link)
+
         cut_sponsored_segments(re.sub("(.webm)", "", actual_file), entry['link'])
-        os.rename(actual_file, new_title+".webm")
+        if new_title + ".webm" in os.listdir():
+            new_title = get_new_title(new_title)
+        os.rename(actual_file, new_title + ".webm")
         already_watched[author][title_key] = 1
         os.chdir("..")
         print("New video from " + author + ": " + new_title + " has been downloaded")
@@ -116,6 +128,10 @@ def download_videos(entry):
 def get_file_name(title, link):
     files = os.listdir(".")
     names = title.split("_")
+    for file in files:
+        if file == title + ".webm":
+            return file
+
     for name in names:
         tmp = files
         files = list(filter(lambda x: name in x and x.endswith('.webm'), files))
@@ -126,7 +142,8 @@ def get_file_name(title, link):
             break
         if len(files) == 0:
             raise FileNotFoundError("something went wrong, please create an issue with the link: " + link['link'])
-
+    if len(files) > 1:
+        files = list(filter(lambda x: len(x) == len(title + ".webm"), files))
     actual_file = files[0]
     return actual_file
 

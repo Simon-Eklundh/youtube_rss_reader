@@ -23,7 +23,7 @@ def cut_sponsored_segments(file_name, url):
 
     create_clips_of_the_parts_to_leave_in(file_name, segments)
 
-    # rename_the clips despite it likely being unnecessary
+    # rename_the clips just to fix any sorting issues with 1 and 11 etc
     rename_clips_in_order(file_name)
 
     create_clip_file_list(file_name)
@@ -56,15 +56,14 @@ def file_sorter(e: str):
     return key
 
 
-def normalize(title:str):
-
+def normalize(title: str):
     for string in title.split():
         if not string.isascii():
             title = title.replace(string, "")
 
     title = re.sub("[—°]", "_", title)
-    title = re.sub("(let's)", "let_us", title, flags=re.IGNORECASE)
-    title = re.sub("'s", "_is", title)
+    title = re.sub("(let's)", "lets", title, flags=re.IGNORECASE)
+    title = re.sub("'s", "_s", title)
     title = re.sub("'d", "_would", title)
     title = unidecode(title)
     title = re.sub(":", '_-', title)
@@ -96,20 +95,20 @@ def rename_clips_in_order(file_name):
 
 def create_clips_of_the_parts_to_leave_in(file_name, segments):
     current_start = "00:00:00"
-    os.rename(file_name+".webm", file_name+"_0.webm")
+    os.rename(file_name + ".webm", file_name + "_0.webm")
     clip_index = 1
     for segment in segments:
         start = segment.start
         end = segment.end
 
         subprocess.call(
-            f"ffmpeg -y -ss {current_start} -to {start} -i {file_name}_{clip_index-1}.webm -c copy {file_name}_{clip_index}.webm"
+            f"ffmpeg -y -ss {current_start} -to {start} -i {file_name}_{clip_index - 1}.webm -c copy {file_name}_{clip_index}.webm"
         )
         clip_index += 1
         subprocess.call(
             f"ffmpeg -y -ss {end} -i {file_name}_{clip_index - 2}.webm -c copy {file_name}_{clip_index}.webm"
         )
-        if os.path.exists(f"{file_name}_{clip_index -2}.webm"):
-            os.remove(f"{file_name}_{clip_index -2}.webm")
+        if os.path.exists(f"{file_name}_{clip_index - 2}.webm"):
+            os.remove(f"{file_name}_{clip_index - 2}.webm")
         current_start = end
         clip_index += 1

@@ -18,12 +18,12 @@ def read_file(file_name):
 
 def save_ignored():
     with open(config_directory + '/ignored.json', 'w') as outfile:
-        json.dump(ignored, outfile)
+        json.dump(ignored, outfile, indent=4)
 
 
 def save_downloaded_list():
     with open(config_directory + '/watched.json', 'w') as outfile:
-        json.dump(already_watched, outfile)
+        json.dump(already_watched, outfile, indent=4)
 
 
 def read_channel_lists():
@@ -75,7 +75,7 @@ def get_broken_videos():
 
 def save_broken_videos():
     with open(config_directory + '/broken.json', 'w') as outfile:
-        json.dump(broken_videos, outfile)
+        json.dump(broken_videos, outfile, indent=4)
 
 
 def read_keywords_to_skip():
