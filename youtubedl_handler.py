@@ -71,7 +71,7 @@ def download_videos(entry):
         already_watched[author_key] = {}
 
     if title_key not in already_watched[author_key]:
-
+        print(f"Checking {title_key} by {author_key}")
         with YoutubeDL({"quiet": "true"}) as ydl:
             try:
                 test = ydl.extract_info(entry['link'], download=False)
@@ -94,17 +94,17 @@ def download_videos(entry):
             pathlib.Path(author).mkdir(parents=True, exist_ok=True)
         os.chdir(author)
         ydl_opts = setup_downloader_options()
-        print(f"downloading {title_key} by {author}")
+
         with YoutubeDL(ydl_opts) as ydl:
             try:
-                print(f"downloading {title_key} by {author_key}")
+                print(f"Downloading {title_key} by {author_key}")
                 ydl.download([entry['link']])
-                print(f"downloaded {title_key} by {author_key}")
+                print(f"Downloaded {title_key} by {author_key}")
             except Exception as e:
 
                 os.chdir("../")
                 add_to_fail_category(e, entry)
-                print("failed download:" + entry['title'] + " " + entry['link'])
+                print("Failed download:" + entry['title'] + " " + entry['link'])
                 return
 
         link = entry['link']
