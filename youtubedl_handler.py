@@ -92,6 +92,7 @@ def download_videos(entry):
         if pathlib.Path(author).is_dir() is False:
             pathlib.Path(author).mkdir(parents=True, exist_ok=True)
         os.chdir(author)
+
         title = normalize(title_key)
         new_title = re.sub("_s_", "s_", title)
         new_title = re.sub("_", " ", new_title)
@@ -112,7 +113,7 @@ def download_videos(entry):
 
         link = entry['link']
         # todo reduce this or remove the tmp creation (probably the tmp creation)
-        actual_file = get_file_name(title, link)
+        actual_file = get_file_name(title_key, link)
 
         cut_sponsored_segments(re.sub("(.webm)", "", actual_file), entry['link'])
         if new_title + ".webm" in os.listdir():
@@ -127,7 +128,7 @@ def download_videos(entry):
 
 def get_file_name(title, link):
     files = os.listdir(".")
-    names = title.split("_")
+    names = title.split(" ")
     for file in files:
         if file == title + ".webm":
             return file
@@ -170,7 +171,7 @@ def setup_downloader_options():
     ydl_opts['format'] = 'bestvideo+bestaudio/best'
     ydl_opts['merge_output_format'] = 'webm'
     ydl_opts['ratelimit'] = rate
-    ydl_opts['restrictfilenames'] = 'true'
+   # ydl_opts['restrictfilenames'] = 'false'
     ydl_opts['match_filter'] = longer_than_a_minute
     ydl_opts['quiet'] = 'true'
     return ydl_opts
