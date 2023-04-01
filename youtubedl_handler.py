@@ -3,6 +3,7 @@ import pathlib
 import re
 from datetime import time, datetime
 
+from unidecode import unidecode
 from yt_dlp import YoutubeDL
 
 from file_handler import get_already_watched, get_ignored, save_downloaded_list, save_ignored, get_broken_videos, \
@@ -92,18 +93,13 @@ def download_videos(entry):
         if pathlib.Path(author).is_dir() is False:
             pathlib.Path(author).mkdir(parents=True, exist_ok=True)
         os.chdir(author)
-
-        title = normalize(title_key)
-        new_title = re.sub("_s_", "s_", title)
-        new_title = re.sub("_", " ", new_title)
-
-        # this is only for debugging
-        old_title = title
         ydl_opts = setup_downloader_options()
-        print(f"downloading {new_title} by {author}")
+        print(f"downloading {title_key} by {author}")
         with YoutubeDL(ydl_opts) as ydl:
             try:
+                print(f"downloading {title_key} by {author_key}")
                 ydl.download([entry['link']])
+                print(f"downloaded {title_key} by {author_key}")
             except Exception as e:
 
                 os.chdir("../")
@@ -112,16 +108,21 @@ def download_videos(entry):
                 return
 
         link = entry['link']
-        # todo reduce this or remove the tmp creation (probably the tmp creation)
-        actual_file = get_file_name(title_key, link)
 
-        cut_sponsored_segments(re.sub("(.webm)", "", actual_file), entry['link'])
-        if new_title + ".webm" in os.listdir():
-            new_title = get_new_title(new_title)
-        os.rename(actual_file, new_title + ".webm")
+        actual_file = get_file_name(title_key, link)
+        tmp = re.sub(" ", "_", actual_file)
+        tmp = unidecode(tmp)
+        os.rename(actual_file, tmp)
+        print(f"cutting {title_key} by {author_key}")
+        cut_sponsored_segments(re.sub("(.webm)", "", tmp), entry['link'])
+        print(f"done cutting {title_key} by {author_key}")
+        new_title = actual_file
+        if actual_file in os.listdir():
+            new_title = get_new_title(actual_file)
+        os.rename(tmp, new_title + ".webm")
         already_watched[author][title_key] = 1
         os.chdir("..")
-        print("New video from " + author + ": " + new_title + " has been downloaded")
+        print("New video from " + author + ": " + actual_file + " has been downloaded and cut")
     save_downloaded_list()
     save_ignored()
 
@@ -171,7 +172,6 @@ def setup_downloader_options():
     ydl_opts['format'] = 'bestvideo+bestaudio/best'
     ydl_opts['merge_output_format'] = 'webm'
     ydl_opts['ratelimit'] = rate
-   # ydl_opts['restrictfilenames'] = 'false'
     ydl_opts['match_filter'] = longer_than_a_minute
     ydl_opts['quiet'] = 'true'
     return ydl_opts

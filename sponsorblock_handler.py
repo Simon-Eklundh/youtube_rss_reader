@@ -23,12 +23,10 @@ def cut_sponsored_segments(file_name, url):
 
     create_clips_of_the_parts_to_leave_in(file_name, segments)
 
-    # rename_the clips just to fix any sorting issues with 1 and 11 etc
-    rename_clips_in_order(file_name)
 
     create_clip_file_list(file_name)
     # concatenate all the clips in order into a single video
-    subprocess.call(f"ffmpeg -safe 0 -y -f concat -i {file_name + '_list.txt'} -c copy {file_name + '.webm'}")
+    subprocess.call(f"ffmpeg -safe 0 -y -f concat -i {file_name}_list.txt -c copy {file_name}.webm ")
 
     for file in os.listdir():
         if file.startswith(file_name + "_"):
@@ -41,7 +39,7 @@ def create_clip_file_list(file_name):
         if file.startswith(file_name + "_"):
             files.append(file)
     # sorting is actually unnecessary but it's for good measure
-    files.sort()
+    files.sort(key=file_sorter)
     # open file_name_list.txt and write the list of files to it
     with open(file_name + "_list.txt", 'a') as file:
         for f in files:
@@ -102,13 +100,13 @@ def create_clips_of_the_parts_to_leave_in(file_name, segments):
         end = segment.end
 
         subprocess.call(
-            f"ffmpeg -y -ss {current_start} -to {start} -i {file_name}_{clip_index - 1}.webm -c copy {file_name}_{clip_index}.webm"
+            f"""ffmpeg -y -ss {current_start} -to {start} -i "{file_name}_{clip_index - 1}.webm" -c copy "{file_name}_{clip_index}.webm" """
         )
         clip_index += 1
         subprocess.call(
-            f"ffmpeg -y -ss {end} -i {file_name}_{clip_index - 2}.webm -c copy {file_name}_{clip_index}.webm"
+            f"""ffmpeg -y -ss {end} -i "{file_name}_{clip_index - 2}.webm" -c copy "{file_name}_{clip_index}.webm" """
         )
-        if os.path.exists(f"{file_name}_{clip_index - 2}.webm"):
-            os.remove(f"{file_name}_{clip_index - 2}.webm")
+        if os.path.exists(f"'{file_name}_{clip_index - 2}.webm'"):
+            os.remove(f"'{file_name}_{clip_index - 2}.webm'")
         current_start = end
         clip_index += 1
