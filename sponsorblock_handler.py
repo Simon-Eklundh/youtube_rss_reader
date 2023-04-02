@@ -52,27 +52,6 @@ def file_sorter(e: str):
     key: int = int(out[len(out) - 1].split(".")[0])
     return key
 
-
-def normalize(title: str):
-    for string in title.split():
-        if not string.isascii():
-            title = title.replace(string, "")
-
-    title = re.sub("[—°]", "_", title)
-    title = re.sub("(let's)", "lets", title, flags=re.IGNORECASE)
-    title = re.sub("'s", "_s", title)
-    title = re.sub("'d", "_would", title)
-    title = unidecode(title)
-    title = re.sub(":", '_-', title)
-    title = re.sub(r"[^\w_.%+@-]", '_', title)
-    while "__" in title:
-        title = re.sub(r'(__)', '_', title)
-    while title.startswith("'") or title.startswith("_") or title.endswith("-") or title.endswith("_"):
-        title = title.strip("_").strip("-")
-
-    return title
-
-
 def rename_clips_in_order(file_name):
     files = []
     clip_index = 0

@@ -147,3 +147,9 @@ def get_channel_id(channel_link: str):
         test = ydl.extract_info(channel_link, download=False)
 
     return test['channel_id']
+
+def read_config_files():
+    read_already_watched()
+    read_ignored()
+    read_not_working_videos()
+    read_keywords_to_skip()

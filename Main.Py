@@ -4,9 +4,8 @@ import feedparser
 from moviepy.editor import *
 from yt_dlp import YoutubeDL
 
-from file_handler import read_already_watched, read_ignored, read_legacy_channel_lists, read_not_working_videos, \
-    read_keywords_to_skip, read_channel_dict, save_channel_dict, read_legacy_channel_converter_dict_lists, \
-    save_legacy_converter_dict, create_channels_from_new_format
+from file_handler import read_config_files, read_channel_dict, read_legacy_channel_converter_dict_lists, \
+    create_channels_from_new_format, read_legacy_channel_lists, save_channel_dict, save_legacy_converter_dict
 from youtubedl_handler import download_videos
 
 
@@ -35,10 +34,7 @@ def get_channel_feed(channel):
 
 
 def main():
-    read_already_watched()
-    read_ignored()
-    read_not_working_videos()
-    read_keywords_to_skip()
+    read_config_files()
 
     # legacy
     print("checking for channels using the legacy channel format")
@@ -54,6 +50,8 @@ def main():
     os.chdir(download_dir)
 
     download_and_sponsorblock_videos(channel_dict)
+
+
 
 
 # for each entry in channel_file_dict
@@ -88,10 +86,8 @@ def create_channel_dict_from_legacy():
     return channel_dict
 
 
-# if something is regionlocked you can check for it in the Exception using Exception as e
-# and ignore it or add to list of regionlocked
-# if you want to use a vpn
-def tester():
+# test area, gets reused whenever a bug exists
+def _tester():
     # help(yt_dlp.YoutubeDL)
     opt = {
         "quiet": "true"
@@ -100,9 +96,6 @@ def tester():
         try:
             info = ydl.extract_info("https://youtu.be/6yUj2diY9y8", download=False)
             print(info['channel_id'])
-        # todo create regionlocked list and make an option to skip regionlocked videos
-        # todo create different lists for different blocked videos and skip them like ignored
-        # todo add option to rerun blocked videos of all kinds (excluding shorts)
         except Exception as e:
 
             return
@@ -110,6 +103,6 @@ def tester():
 
 if __name__ == '__main__':
     main()
-    # tester()
+    # _tester()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

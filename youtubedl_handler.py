@@ -8,7 +8,7 @@ from yt_dlp import YoutubeDL
 
 from file_handler import get_already_watched, get_ignored, save_downloaded_list, save_ignored, get_broken_videos, \
     save_broken_videos, get_keywords_to_skip
-from sponsorblock_handler import normalize, cut_sponsored_segments
+from sponsorblock_handler import cut_sponsored_segments
 
 
 def is_in_fail_categories(link):
@@ -52,6 +52,38 @@ def get_new_title(new_title):
     return tmp
 
 
+def should_skip(entry, ignored, already_watched):
+    keywords_to_skip = get_keywords_to_skip()
+
+    if is_in_fail_categories(entry['link']):
+        return True
+    if entry['title'] in ignored:
+        return True
+    if entry['author'] in keywords_to_skip:
+        for keyword in keywords_to_skip[entry['author']]:
+            if keyword in entry['title']:
+                print("keyword: " + keyword + " is in " + entry['title'] + " by " + entry['author'] + ", skipping")
+                return True
+    if entry['title'] not in already_watched[entry['author']]:
+        print(f"Checking {entry['title']} by {entry['author']}")
+        with YoutubeDL({"quiet": "true"}) as ydl:
+            try:
+                test = ydl.extract_info(entry['link'], download=False)
+                if "live_status" in test and test['live_status'] == "is_live":
+                    print("livestream is still live")
+                    return True
+                if 'duration' in test and test['duration'] <= 60:
+                    print(f"{entry['title']} is a short, skipping")
+                    ignored[entry['title']] = 1
+                    return True
+            except Exception as error:
+                print("failed download:" + entry['title'] + " " + entry['link'])
+                add_to_fail_category(error, entry)
+                return True
+    return False
+
+
+
 def download_videos(entry):
     title_key = entry['title']
     author_key = entry['author']
@@ -59,70 +91,55 @@ def download_videos(entry):
     # this is because youtube added shorts, and they are just bad in 90% of cases
     ignored = get_ignored()
     already_watched = get_already_watched()
-    keywords_to_skip = get_keywords_to_skip()
-    if is_in_fail_categories(entry['link']):
+
+    if should_skip(entry, ignored, already_watched):
         return
-    if title_key in ignored:
-        return
-    if author_key in keywords_to_skip:
-        for keyword in keywords_to_skip[author_key]:
-            if keyword in title_key:
-                print("keyword: " + keyword + " is in " + title_key + " by " + entry['author'] + ", skipping")
-                return
+
     if author_key not in already_watched:
         already_watched[author_key] = {}
 
-    if title_key not in already_watched[author_key]:
-        print(f"Checking {title_key} by {author_key}")
-        with YoutubeDL({"quiet": "true"}) as ydl:
-            try:
-                test = ydl.extract_info(entry['link'], download=False)
-                author = test['uploader']
-                if "live_status" in test and test['live_status'] == "is_live":
-                    print("livestream is still live")
-                    return
-                if 'duration' in test and test['duration'] <= 60:
-                    print(f"{entry['title']} is a short, skipping")
-                    ignored[title_key] = 1
-                    return
-            except Exception as error:
-                print("failed download:" + entry['title'] + " " + entry['link'])
-                add_to_fail_category(error, entry)
-                return
-        if pathlib.Path(author).is_dir() is False:
-            pathlib.Path(author).mkdir(parents=True, exist_ok=True)
-        os.chdir(author)
-        ydl_opts = setup_downloader_options()
+    if pathlib.Path(author_key).is_dir() is False:
+        pathlib.Path(author_key).mkdir(parents=True, exist_ok=True)
+    os.chdir(author_key)
+    ydl_opts = setup_downloader_options()
 
-        with YoutubeDL(ydl_opts) as ydl:
-            try:
-                print(f"Downloading {title_key} by {author_key}")
-                ydl.download([entry['link']])
-                print(f"Downloaded {title_key} by {author_key}")
-            except Exception as e:
+    if not download_video(author_key, entry, title_key, ydl_opts):
+        return
 
-                os.chdir("../")
-                add_to_fail_category(e, entry)
-                print("Failed download:" + entry['title'] + " " + entry['link'])
-                return
-
-        link = entry['link']
-
-        actual_file = get_file_name(title_key, link)
-        tmp = "file.webm"
-        os.rename(actual_file, tmp)
-        print(f"cutting {title_key} by {author_key}")
-        cut_sponsored_segments(re.sub("(.webm)", "", tmp), entry['link'])
-        print(f"done cutting {title_key} by {author_key}")
-        new_title = actual_file
-        if actual_file in os.listdir():
-            new_title = get_new_title(actual_file)
-        os.rename(tmp, new_title + ".webm")
-        already_watched[author][title_key] = 1
-        os.chdir("..")
-        print("New video from " + author + ": " + actual_file + " has been downloaded and cut")
+    actual_file = handle_video(author_key, entry, title_key)
+    already_watched[author_key][title_key] = 1
+    os.chdir("..")
+    print("New video from " + author_key + ": " + actual_file + " has been downloaded and cut")
     save_downloaded_list()
     save_ignored()
+
+
+def handle_video(author_key, entry, title_key):
+    actual_file = get_file_name(title_key, entry['link'])
+    tmp = "file.webm"
+    os.rename(actual_file, tmp)
+    print(f"cutting {title_key} by {author_key}")
+    cut_sponsored_segments(re.sub("(.webm)", "", tmp), entry['link'])
+    print(f"done cutting {title_key} by {author_key}")
+    new_title = actual_file
+    if actual_file in os.listdir():
+        new_title = get_new_title(actual_file)
+    os.rename(tmp, new_title)
+    return actual_file
+
+
+def download_video(author_key, entry, title_key, ydl_opts):
+    with YoutubeDL(ydl_opts) as ydl:
+        try:
+            print(f"Downloading {title_key} by {author_key}")
+            ydl.download([entry['link']])
+            print(f"Downloaded {title_key} by {author_key}")
+        except Exception as e:
+
+            os.chdir("../")
+            add_to_fail_category(e, entry)
+            print("Failed download:" + entry['title'] + " " + entry['link'])
+            return False
 
 
 def get_file_name(title, link):
@@ -172,7 +189,7 @@ def setup_downloader_options():
     ydl_opts['ratelimit'] = rate
     ydl_opts['match_filter'] = longer_than_a_minute
     ydl_opts['quiet'] = 'true'
-   # ydl_opts[''] = 'true'
+    # ydl_opts[''] = 'true'
     return ydl_opts
 
 
@@ -182,5 +199,3 @@ def longer_than_a_minute(info, *, incomplete):
     duration = info.get('duration')
     if duration and duration < 60:  # <= after fix of ...
         return 'The video is too short'
-
-
