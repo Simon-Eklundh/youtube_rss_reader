@@ -30,6 +30,8 @@ def add_to_fail_category(error: Exception, entry):
         key = "membersonly"
     elif "This live event will begin" in error.args[0]:
         return
+    elif "Premieres in" in error.args[0]:
+        return
     elif "Video unavailable. This video is not available" in error.args[0]:
         key = "removed"
     else:
