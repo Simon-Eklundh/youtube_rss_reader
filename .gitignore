@@ -1,5 +1,4 @@
 /legacy_categories/*
-
 /watched.json
 /ignored.json
 /legacy_categories/
@@ -12,8 +11,4 @@
 /broken.json
 /skip.json
 /configs/
-
 /already_imported_categories/
-
-
-

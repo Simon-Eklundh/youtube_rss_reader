@@ -26,7 +26,7 @@ def download_and_sponsorblock_videos(categories):
                 for entry in channel_rss_feed['entries']:
                     download_videos(entry)
 
-    os.chdir("../")
+        os.chdir("../")
 
 
 def get_channel_feed(channel):

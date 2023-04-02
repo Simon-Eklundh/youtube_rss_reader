@@ -96,7 +96,18 @@ A dict describing which files have already been downloaded:
 {
   "channel name" : {
     "title" : 1,
-    "title 2"
+    "title 2" : 1
+  }
+}
+````
+
+just used for logging and stopping re-downloading files
+
+to re-download title 2, remove it and if it's the last line before a closing bracket, remove the comma above, ex:
+````json
+{
+  "channel name" : {
+    "title" : 1
   }
 }
 ````
