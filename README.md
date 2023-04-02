@@ -117,10 +117,6 @@ to re-download title 2, remove it and if it's the last line before a closing bra
 - add an issue
 - or make a pull request
 
-### Example files
-
-example files can be found in the Examples directory
-
 ### Downloaded videos
 
 a json file containing the downloaded videos is created if it doesn't already exist. if you delete this file or run the program in another directory it'll recreate an empty version of the file.
