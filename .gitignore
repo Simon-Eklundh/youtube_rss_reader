@@ -1,7 +1,7 @@
-/categories/*
-
+/legacy_categories/*
 /watched.json
 /ignored.json
+/legacy_categories/
 /categories/
 /.idea/vcs.xml
 /.idea/youtube_rss_reader.iml
@@ -10,3 +10,6 @@
 /.idea/misc.xml
 /broken.json
 /skip.json
+/configs/
+/already_imported_categories/
+

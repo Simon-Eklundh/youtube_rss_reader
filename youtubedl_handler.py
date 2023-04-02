@@ -30,6 +30,8 @@ def add_to_fail_category(error: Exception, entry):
         key = "membersonly"
     elif "This live event will begin" in error.args[0]:
         return
+    elif "Premieres in" in error.args[0]:
+        return
     elif "Video unavailable. This video is not available" in error.args[0]:
         key = "removed"
     else:
@@ -110,8 +112,7 @@ def download_videos(entry):
         link = entry['link']
 
         actual_file = get_file_name(title_key, link)
-        tmp = re.sub(" ", "_", actual_file)
-        tmp = unidecode(tmp)
+        tmp = "file.webm"
         os.rename(actual_file, tmp)
         print(f"cutting {title_key} by {author_key}")
         cut_sponsored_segments(re.sub("(.webm)", "", tmp), entry['link'])
@@ -174,6 +175,7 @@ def setup_downloader_options():
     ydl_opts['ratelimit'] = rate
     ydl_opts['match_filter'] = longer_than_a_minute
     ydl_opts['quiet'] = 'true'
+   # ydl_opts[''] = 'true'
     return ydl_opts
 
 
@@ -183,3 +185,5 @@ def longer_than_a_minute(info, *, incomplete):
     duration = info.get('duration')
     if duration and duration < 60:  # <= after fix of ...
         return 'The video is too short'
+
+
