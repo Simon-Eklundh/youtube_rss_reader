@@ -77,13 +77,10 @@ def download_videos(entry):
         with YoutubeDL({"quiet": "true"}) as ydl:
             try:
                 test = ydl.extract_info(entry['link'], download=False)
-                title = test['title']
                 author = test['uploader']
                 if "live_status" in test and test['live_status'] == "is_live":
                     print("livestream is still live")
                     return
-                # todo make this default but turnoff-able
-                # this is actually covered by an option in ydl opts but this way we don't need to do a poll over internet
                 if 'duration' in test and test['duration'] <= 60:
                     print(f"{entry['title']} is a short, skipping")
                     ignored[title_key] = 1
