@@ -23,7 +23,6 @@ def cut_sponsored_segments(file_name, url):
 
     create_clips_of_the_parts_to_leave_in(file_name, segments)
 
-
     create_clip_file_list(file_name)
     # concatenate all the clips in order into a single video
     subprocess.call(f"ffmpeg -safe 0 -y -f concat -i {file_name}_list.txt -c copy {file_name}.webm ")
@@ -106,7 +105,8 @@ def create_clips_of_the_parts_to_leave_in(file_name, segments):
         subprocess.call(
             f"""ffmpeg -y -ss {end} -i "{file_name}_{clip_index - 2}.webm" -c copy "{file_name}_{clip_index}.webm" """
         )
-        if os.path.exists(f"'{file_name}_{clip_index - 2}.webm'"):
-            os.remove(f"'{file_name}_{clip_index - 2}.webm'")
+        print(f"{file_name}_{clip_index - 2}.webm")
+        if os.path.exists(f"{file_name}_{clip_index - 2}.webm"):
+            os.remove(f"{file_name}_{clip_index - 2}.webm")
         current_start = end
         clip_index += 1
