@@ -64,24 +64,29 @@ def should_skip(entry, ignored, already_watched):
             if keyword in entry['title']:
                 print("keyword: " + keyword + " is in " + entry['title'] + " by " + entry['author'] + ", skipping")
                 return True
-    if entry['title'] not in already_watched[entry['author']]:
-        print(f"Checking {entry['title']} by {entry['author']}")
-        with YoutubeDL({"quiet": "true"}) as ydl:
-            try:
-                test = ydl.extract_info(entry['link'], download=False)
-                if "live_status" in test and test['live_status'] == "is_live":
-                    print("livestream is still live")
-                    return True
-                if 'duration' in test and test['duration'] <= 60:
-                    print(f"{entry['title']} is a short, skipping")
-                    ignored[entry['title']] = 1
-                    return True
-            except Exception as error:
-                print("failed download:" + entry['title'] + " " + entry['link'])
-                add_to_fail_category(error, entry)
-                return True
-    return False
 
+    if entry['author'] not in already_watched:
+        already_watched[entry['author']] = {}
+
+    if entry['title'] in already_watched[entry['author']]:
+        return True
+    print(f"Checking {entry['title']} by {entry['author']}")
+    with YoutubeDL({"quiet": "true"}) as ydl:
+        try:
+            test = ydl.extract_info(entry['link'], download=False)
+            if "live_status" in test and test['live_status'] == "is_live":
+                print("livestream is still live")
+                return True
+            if 'duration' in test and test['duration'] <= 60:
+                print(f"{entry['title']} is a short, skipping")
+                ignored[entry['title']] = 1
+                return True
+        except Exception as error:
+            print("failed download:" + entry['title'] + " " + entry['link'])
+            add_to_fail_category(error, entry)
+            return True
+
+    return False
 
 
 def download_videos(entry):
@@ -95,15 +100,13 @@ def download_videos(entry):
     if should_skip(entry, ignored, already_watched):
         return
 
-    if author_key not in already_watched:
-        already_watched[author_key] = {}
-
     if pathlib.Path(author_key).is_dir() is False:
         pathlib.Path(author_key).mkdir(parents=True, exist_ok=True)
     os.chdir(author_key)
     ydl_opts = setup_downloader_options()
 
     if not download_video(author_key, entry, title_key, ydl_opts):
+        os.chdir("../")
         return
 
     actual_file = handle_video(author_key, entry, title_key)
@@ -140,7 +143,7 @@ def download_video(author_key, entry, title_key, ydl_opts):
             add_to_fail_category(e, entry)
             print("Failed download:" + entry['title'] + " " + entry['link'])
             return False
-
+    return True
 
 def get_file_name(title, link):
     files = os.listdir(".")
