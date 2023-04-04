@@ -4,6 +4,7 @@ import feedparser
 from moviepy.editor import *
 from yt_dlp import YoutubeDL
 
+import file_handler
 from file_handler import read_config_files, read_channel_dict, read_legacy_channel_converter_dict_lists, \
     create_channels_from_new_format, read_legacy_channel_lists, save_channel_dict, save_legacy_converter_dict
 from youtubedl_handler import download_videos
@@ -23,7 +24,7 @@ def download_and_sponsorblock_videos(categories):
                 channel_rss_feed = get_channel_feed(channel[key])
 
                 for entry in channel_rss_feed['entries']:
-                    download_videos(entry)
+                    download_videos(entry, category)
 
         os.chdir("../")
 
@@ -50,8 +51,6 @@ def main():
     os.chdir(download_dir)
 
     download_and_sponsorblock_videos(channel_dict)
-
-
 
 
 # for each entry in channel_file_dict
@@ -88,21 +87,17 @@ def create_channel_dict_from_legacy():
 
 # test area, gets reused whenever a bug exists
 def _tester():
-    # help(yt_dlp.YoutubeDL)
-    opt = {
-        "quiet": "true"
-    }
-    with YoutubeDL(opt) as ydl:
-        try:
-            info = ydl.extract_info("https://youtu.be/6yUj2diY9y8", download=False)
-            print(info['channel_id'])
-        except Exception as e:
 
-            return
+    file_handler.read_keywords_to_skip()
+    test = file_handler.get_keywords_to_skip()
+    tmp = test["skip_categories"]
+    print(tmp)
+
+
 
 
 if __name__ == '__main__':
     main()
-    # _tester()
+    #_tester()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

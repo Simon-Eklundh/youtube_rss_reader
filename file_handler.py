@@ -139,6 +139,7 @@ def create_channels_from_new_format(channel_dict: dict[str, list[dict[str, str]]
         for channel in tmp:
             if channel not in channel_dict[file.rstrip(".json")]:
                 channel_dict[file.rstrip(".json")].append({channel: get_channel_id(tmp[channel])})
+    save_channel_dict(channel_dict)
     return channel_dict
 
 

@@ -52,17 +52,31 @@ def get_new_title(new_title):
     return tmp
 
 
-def should_skip(entry, ignored, already_watched):
+def should_skip(entry, ignored, already_watched, category):
     keywords_to_skip = get_keywords_to_skip()
 
     if is_in_fail_categories(entry['link']):
         return True
     if entry['title'] in ignored:
         return True
-    if entry['author'] in keywords_to_skip:
-        for keyword in keywords_to_skip[entry['author']]:
+
+    if 'skip_categories' in keywords_to_skip and category in keywords_to_skip['skip_categories']:
+
+        if entry['author'] in keywords_to_skip['skip_categories'][category]:
+            if entry['author'] in keywords_to_skip['skip_categories'][category]:
+                for keyword in keywords_to_skip['skip_categories'][category][entry['author']]:
+                    if keyword in entry['title']:
+                        print("category and author based keyword: " + keyword + " is in " + entry['title'] + " by " + entry['author'] + ", skipping")
+                        return True
+        if 'skip_in_this_category' in keywords_to_skip['skip_categories'][category]:
+            for keyword in keywords_to_skip['skip_categories'][category]['skip_in_this_category']:
+                if keyword in entry['title']:
+                    print("category keyword: " + keyword + " is in " + entry['title'] + " by " + entry['author'] + ", skipping")
+                    return True
+    if 'skip_in_all_categories' in keywords_to_skip:
+        for keyword in keywords_to_skip['skip_in_all_categories']:
             if keyword in entry['title']:
-                print("keyword: " + keyword + " is in " + entry['title'] + " by " + entry['author'] + ", skipping")
+                print("global keyword: " + keyword + " is in " + entry['title'] + " by " + entry['author'] + ", skipping")
                 return True
 
     if entry['author'] not in already_watched:
@@ -89,7 +103,7 @@ def should_skip(entry, ignored, already_watched):
     return False
 
 
-def download_videos(entry):
+def download_videos(entry, category):
     title_key = entry['title']
     author_key = entry['author']
     # if the video is less than 60 seconds long, skip it
@@ -97,13 +111,13 @@ def download_videos(entry):
     ignored = get_ignored()
     already_watched = get_already_watched()
 
-    if should_skip(entry, ignored, already_watched):
+    if should_skip(entry, ignored, already_watched, category):
         return
 
     if pathlib.Path(author_key).is_dir() is False:
         pathlib.Path(author_key).mkdir(parents=True, exist_ok=True)
     os.chdir(author_key)
-    ydl_opts = setup_downloader_options()
+    ydl_opts = setup_downloader_options(entry)
 
     if not download_video(author_key, entry, title_key, ydl_opts):
         os.chdir("../")
@@ -183,7 +197,32 @@ def get_rate():
     return alternative_rate
 
 
-def setup_downloader_options():
+def should_download_subtitles(entry):
+    return False
+
+
+def get_subtitle_language():
+    return ""
+
+
+def setup_downloader_options(entry):
+    # todo add subtitles if non-english (list?) or all? (probably just a list with the ability of doing include, exclude, all
+    """
+    todo
+    {
+        "prefer_subtitles" : True/False,
+        "by_keyword" : True/False,
+        "include" : [],
+        "exclude" : [],
+        "include_keyword" : [{author, [keywords]},{second_author,[keywords]}],
+        "exclude_keyword" : []
+    }
+    if prefer = True: include is ignored, exclude is a blacklist
+    otherwise:
+    include is a whitelist
+
+    by author, or by author and keyword
+    """
     rate = get_rate()
     ydl_opts = {}
     ydl_opts['outtmpl'] = '%(title)s.%(ext)s'
@@ -192,7 +231,10 @@ def setup_downloader_options():
     ydl_opts['ratelimit'] = rate
     ydl_opts['match_filter'] = longer_than_a_minute
     ydl_opts['quiet'] = 'true'
-    # ydl_opts[''] = 'true'
+    if should_download_subtitles(entry):
+        # todo get the correct names here
+        ydl_opts['downloadsubtitles'] = 'true'
+        ydl_opts['subtitle_language'] = get_subtitle_language()
     return ydl_opts
 
 

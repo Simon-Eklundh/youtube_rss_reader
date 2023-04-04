@@ -72,6 +72,30 @@ A dict containing each category, channel name, and channel id:
 ````
 I don't recommend editing this unless you know what you're doing
 
+### skip.json
+
+A dict of category, user and keyword list.
+any video from the user which has one of the keywords in the list will be skipped
+with extra choice of banning all words or all words in a specific category
+
+ex:
+````json
+{   
+  "skip_in_all_categories": [],
+  "skip_categories": {
+    "Gaming": {
+      "skip_in_this_category":[],
+      "Moonbo": [
+        "LIVE"
+      ]
+    }
+  }
+}
+````
+will not download any video posted by Moonbo that contains the word Live
+
+an option to skip all videos containing a keyword will be added eventually
+
 #### ignored.json
 
 A dict of video titles that were skipped for being shorts
