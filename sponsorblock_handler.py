@@ -13,19 +13,20 @@ def get_segments_to_remove(url):
     return segments
 
 
-def cut_sponsored_segments(file_name, url):
+def cut_sponsored_segments(file_name, url, file_type):
     # this uses an api call which returns a 404 if the video isn't in sponsorblock. if it returns an error, we don't cut
-    # todo reduce these calls somehow (self-hosting?) left for last
+    # maybe reduce these calls somehow (self-hosting?) left for last
+    # if I can be bothered I will change this to have optional cuts
     try:
         segments: list[sb.Segment] = get_segments_to_remove(url)
     except:
         return
 
-    create_clips_of_the_parts_to_leave_in(file_name, segments)
+    create_clips_of_the_parts_to_leave_in(file_name, segments, file_type)
 
     create_clip_file_list(file_name)
     # concatenate all the clips in order into a single video
-    subprocess.call(f"ffmpeg -safe 0 -y -f concat -i {file_name}_list.txt -c copy {file_name}.webm ")
+    subprocess.call(f"ffmpeg -safe 0 -y -f concat -i {file_name}_list.txt -c copy {file_name}.{file_type} ")
 
     for file in os.listdir():
         if file.startswith(file_name + "_"):
@@ -69,7 +70,7 @@ def rename_clips_in_order(file_name):
         os.rename(file_dict[file], file)
 
 
-def create_clips_of_the_parts_to_leave_in(file_name, segments):
+def create_clips_of_the_parts_to_leave_in(file_name, segments, file_type):
     current_start = "00:00:00"
     os.rename(file_name + ".webm", file_name + "_0.webm")
     clip_index = 1
@@ -78,14 +79,14 @@ def create_clips_of_the_parts_to_leave_in(file_name, segments):
         end = segment.end
 
         subprocess.call(
-            f"""ffmpeg -y -ss {current_start} -to {start} -i "{file_name}_{clip_index - 1}.webm" -c copy "{file_name}_{clip_index}.webm" """
+            f"""ffmpeg -y -ss {current_start} -to {start} -i "{file_name}_{clip_index - 1}.{file_type}" -c copy "{file_name}_{clip_index}.{file_type}" """
         )
         clip_index += 1
         subprocess.call(
-            f"""ffmpeg -y -ss {end} -i "{file_name}_{clip_index - 2}.webm" -c copy "{file_name}_{clip_index}.webm" """
+            f"""ffmpeg -y -ss {end} -i "{file_name}_{clip_index - 2}.{file_type}" -c copy "{file_name}_{clip_index}.{file_type}" """
         )
-        print(f"{file_name}_{clip_index - 2}.webm")
-        if os.path.exists(f"{file_name}_{clip_index - 2}.webm"):
-            os.remove(f"{file_name}_{clip_index - 2}.webm")
+        print(f"{file_name}_{clip_index - 2}.{file_type}")
+        if os.path.exists(f"{file_name}_{clip_index - 2}.{file_type}"):
+            os.remove(f"{file_name}_{clip_index - 2}.{file_type}")
         current_start = end
         clip_index += 1

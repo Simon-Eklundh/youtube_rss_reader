@@ -7,23 +7,24 @@ ignored = {}
 broken_videos: dict[str, list] = {}
 keywords_to_skip: dict[str, list] = {}
 channels = {}
+shorts_allowed = []
 from yt_dlp import YoutubeDL
 
 
 def read_file(file_name):
     # open the file and read its lines into an array
-    with open(file_name, 'r') as file:
+    with open(file_name, 'r', encoding='utf-8') as file:
         lines = file.readlines()
     return lines
 
 
 def save_ignored():
-    with open(config_directory + '/ignored.json', 'w') as outfile:
+    with open(config_directory + '/ignored.json', 'w', encoding='utf-8') as outfile:
         json.dump(ignored, outfile, indent=4)
 
 
 def save_downloaded_list():
-    with open(config_directory + '/watched.json', 'w') as outfile:
+    with open(config_directory + '/watched.json', 'w', encoding='utf-8') as outfile:
         json.dump(already_watched, outfile, indent=4)
 
 
@@ -39,7 +40,7 @@ def read_legacy_channel_lists():
 
 def read_ignored():
     try:
-        f = open(config_directory + "/ignored.json")
+        f = open(config_directory + "/ignored.json", encoding='utf-8')
         global ignored
         ignored = json.load(f)
     except:
@@ -49,7 +50,7 @@ def read_ignored():
 
 def read_already_watched():
     try:
-        f = open(config_directory + "/watched.json")
+        f = open(config_directory + "/watched.json", encoding='utf-8')
         global already_watched
         already_watched = json.load(f)
     except:
@@ -66,7 +67,7 @@ def get_ignored():
 
 def read_not_working_videos():
     try:
-        f = open(config_directory + "/broken.json")
+        f = open(config_directory + "/broken.json", encoding='utf-8')
         global broken_videos
         broken_videos = json.load(f)
     except:
@@ -78,13 +79,13 @@ def get_broken_videos():
 
 
 def save_broken_videos():
-    with open(config_directory + '/broken.json', 'w') as outfile:
+    with open(config_directory + '/broken.json', 'w', encoding='utf-8') as outfile:
         json.dump(broken_videos, outfile, indent=4)
 
 
 def read_keywords_to_skip():
     try:
-        f = open(config_directory + "/skip.json")
+        f = open(config_directory + "/skip.json", encoding='utf-8')
         global keywords_to_skip
         keywords_to_skip = json.load(f)
     except:
@@ -96,13 +97,13 @@ def get_keywords_to_skip():
 
 
 def save_channel_dict(channel_dict):
-    with open(config_directory + '/channels.json', 'w') as outfile:
+    with open(config_directory + '/channels.json', 'w', encoding='utf-8') as outfile:
         json.dump(channel_dict, outfile, indent=4)
 
 
 def read_channel_dict():
     try:
-        f = open(config_directory + "/channels.json")
+        f = open(config_directory + "/channels.json", encoding='utf-8')
         global channels
         channels = json.load(f)
     except:
@@ -112,7 +113,7 @@ def read_channel_dict():
 
 def read_legacy_channel_converter_dict_lists():
     try:
-        f = open(config_directory + "/legacy_converter_dict.json")
+        f = open(config_directory + "/legacy_converter_dict.json", encoding='utf-8')
         global channels
         legacy_channels = json.load(f)
     except:
@@ -121,36 +122,71 @@ def read_legacy_channel_converter_dict_lists():
 
 
 def save_legacy_converter_dict(legacy):
-    with open(config_directory + '/legacy_converter_dict.json', 'w') as outfile:
+    with open(config_directory + '/legacy_converter_dict.json', 'w', encoding='utf-8') as outfile:
         json.dump(legacy, outfile, indent=4)
 
 
-def create_channels_from_new_format(channel_dict: dict[str, list[dict[str, str]]]):
+def create_channels_from_new_format(channel_dict: dict[str, dict[str, str]]):
     for file in os.listdir("./categories"):
         if file.rstrip(".json") not in channel_dict:
-            channel_dict[file.rstrip(".json")] = []
+            channel_dict[file.rstrip(".json")] = {}
         try:
-
-            f = open(os.getcwd() + "/categories/" + file)
-
+            f = open("categories/" + file)
             tmp = json.load(f)
         except:
             tmp = {}
+
+        """
+        channeldict{
+        category{
+            "channel" : "url"
+        }
+        }
+        """
+
         for channel in tmp:
-            if channel not in channel_dict[file.rstrip(".json")]:
-                channel_dict[file.rstrip(".json")].append({channel: get_channel_id(tmp[channel])})
+            temp: dict[str, str] = get_channel_dict(tmp[channel])
+            uploader = list(temp.keys())[0]
+            uploader_id = temp[uploader]
+            if uploader not in channel_dict[file.rstrip(".json")]:
+                channel_dict[file.rstrip(".json")][uploader] = uploader_id
+            else:
+                if channel_dict[file.rstrip(".json")][uploader] != uploader_id:
+                    count = 0
+                    while uploader + "_" + str(count) in channel_dict[file.rstrip(".json")]:
+                        if channel_dict[file.rstrip(".json")][uploader + "_" + str(count)] == uploader_id:
+                            break
+                        count += 1
+                    channel_dict[file.rstrip(".json")][uploader + "_" + str(count)] = uploader_id
+
     save_channel_dict(channel_dict)
     return channel_dict
 
 
-def get_channel_id(channel_link: str):
+def get_channel_dict(channel_link: str):
     with YoutubeDL({"quiet": "true"}) as ydl:
         test = ydl.extract_info(channel_link, download=False)
 
-    return test['channel_id']
+    return {str(test['uploader']): str(test['channel_id'])}
+
+
+def read_shorts_allowed():
+    try:
+        f = open(config_directory + "/short_creators.json", encoding='utf-8')
+        global shorts_allowed
+        shorts_allowed = json.load(f)
+    except:
+        shorts_allowed = {}
+
+
 
 def read_config_files():
     read_already_watched()
     read_ignored()
     read_not_working_videos()
     read_keywords_to_skip()
+    read_shorts_allowed()
+
+
+def get_shorts_allowed():
+    return shorts_allowed

@@ -4,7 +4,7 @@ import feedparser
 from moviepy.editor import *
 from yt_dlp import YoutubeDL
 
-import file_handler
+import youtubedl_handler
 from file_handler import read_config_files, read_channel_dict, read_legacy_channel_converter_dict_lists, \
     create_channels_from_new_format, read_legacy_channel_lists, save_channel_dict, save_legacy_converter_dict
 from youtubedl_handler import download_videos
@@ -19,12 +19,10 @@ def download_and_sponsorblock_videos(categories):
             pathlib.Path(category).mkdir(parents=True, exist_ok=True)
         os.chdir(category)
         for channel in categories[category]:
-            for key in channel:
+            channel_rss_feed = get_channel_feed(categories[category][channel])
 
-                channel_rss_feed = get_channel_feed(channel[key])
-
-                for entry in channel_rss_feed['entries']:
-                    download_videos(entry, category)
+            for entry in channel_rss_feed['entries']:
+                download_videos(entry, category)
 
         os.chdir("../")
 
@@ -53,13 +51,8 @@ def main():
     download_and_sponsorblock_videos(channel_dict)
 
 
-# for each entry in channel_file_dict
-#     for channel in channel_dict:
-#       download_and_sponsorblock_videos(legacy_channel_dict[channel], channel.strip(".txt"))
-
-
 def create_channel_dict_from_legacy():
-    channel_dict: dict[str, list[dict[str, str]]] = read_channel_dict()
+    channel_dict: dict[str, dict[str, str]] = read_channel_dict()
     legacy_channel_dict = read_legacy_channel_lists()
     if len(legacy_channel_dict) == 0:
         return channel_dict
@@ -68,7 +61,7 @@ def create_channel_dict_from_legacy():
     for category in legacy_channel_dict:
 
         if category not in channel_dict:
-            channel_dict[category] = []
+            channel_dict[category] = {}
         if category not in legacy_converter_dict:
             legacy_converter_dict[category] = {}
 
@@ -77,7 +70,17 @@ def create_channel_dict_from_legacy():
             if channel.rstrip("\n") not in legacy_converter_dict[category]:
                 feed: dict = get_channel_feed(channel)['feed']
                 channel_name: str = feed['title']
-                channel_dict[category].append({channel_name: channel.rstrip("\n")})
+                if channel_name not in channel_dict[category]:
+                    channel_dict[category][channel_name] = channel.rstrip("\n")
+                elif channel_name in channel_dict[category]:
+                    if channel_dict[category][channel_name] != channel:
+                        counter = 0
+                        while channel_name + "_" + str(counter) in channel_dict[category]:
+                            if channel_dict[category][channel_name + "_" + str(counter)] != channel:
+                                break
+                            counter += 1
+                        channel_dict[category][channel_name + "_" + str(counter)] = channel
+
                 legacy_converter_dict[category][channel.rstrip("\n")] = channel_name
                 # channel_dict[category].append()
     save_channel_dict(channel_dict)
@@ -87,12 +90,16 @@ def create_channel_dict_from_legacy():
 
 # test area, gets reused whenever a bug exists
 def _tester():
+    # todo make this download based on an ai with self-learning skip options?
+    # todo add commandline options for setting download dir, config dir, and a test option to show where it's looking and if it's the correct directory
+    opts = youtubedl_handler.setup_downloader_options("unused")
+    with YoutubeDL(opts) as ydl:
+        try:
+            print(os.getcwd())
+            ydl.download("https://www.youtube.com/watch?v=i6H9ldE-M-Y")
 
-    file_handler.read_keywords_to_skip()
-    test = file_handler.get_keywords_to_skip()
-    tmp = test["skip_categories"]
-    print(tmp)
-
+        except Exception as e:
+            print()
 
 
 
