@@ -219,6 +219,7 @@ def setup_downloader_options(entry):
     rate = get_rate()
     ydl_opts = {}
 
+
     ydl_opts['outtmpl'] = '%(title)s.%(ext)s'
     ydl_opts['format'] = 'bestvideo+bestaudio/best'
     ydl_opts['ratelimit'] = rate

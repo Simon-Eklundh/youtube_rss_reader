@@ -1,3 +1,4 @@
+import fnmatch
 import os
 import re
 import subprocess
@@ -72,21 +73,19 @@ def rename_clips_in_order(file_name):
 
 def create_clips_of_the_parts_to_leave_in(file_name, segments, file_type):
     current_start = "00:00:00"
-    os.rename(file_name + ".webm", file_name + "_0.webm")
+    os.rename(file_name + "." + file_type, file_name + "_0."+file_type)
     clip_index = 1
     for segment in segments:
         start = segment.start
         end = segment.end
 
         subprocess.call(
-            f"""ffmpeg -y -ss {current_start} -to {start} -i "{file_name}_{clip_index - 1}.{file_type}" -c copy "{file_name}_{clip_index}.{file_type}" """
+            f"""ffmpeg -y -ss {current_start} -to {start} -i "{file_name}_0.{file_type}" -c copy "{file_name}_{clip_index}.{file_type}" """
         )
         clip_index += 1
-        subprocess.call(
-            f"""ffmpeg -y -ss {end} -i "{file_name}_{clip_index - 2}.{file_type}" -c copy "{file_name}_{clip_index}.{file_type}" """
-        )
-        print(f"{file_name}_{clip_index - 2}.{file_type}")
-        if os.path.exists(f"{file_name}_{clip_index - 2}.{file_type}"):
-            os.remove(f"{file_name}_{clip_index - 2}.{file_type}")
         current_start = end
-        clip_index += 1
+    for file in os.listdir('.'):
+        if fnmatch.fnmatch(file, file_name+"_[^1-9]."+file_type):
+            os.remove(file_name+"_0."+file_type)
+            return
+
