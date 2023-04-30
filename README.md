@@ -4,6 +4,14 @@ reads a list of YouTube channels (by channel ids or linkx) and downloads any new
 
 ## How to use
 
+### Commandline options
+
+There are three (3) options for commandline variables:
+
+1. --config_dir="config_directory_path"
+2. --download_dir="download_directory_path"
+3. --simulate=True/anything else.  Simulate prints your chosen directories and what's in them before exiting. Use this any time you change the variables! 
+
 ### for new users
 
 - create one or more .json files in the categories directory in the following format:
@@ -228,8 +236,5 @@ if a video fails, it's added to a list of broken videos and ignored. same with s
 
 ### Todo:
 
-- refactoring of comments
-- refactoring of methods and prettifying
 - preferably a reduction in calls to sponsorblock (will likely be left as is for now)
-- add options that allow the user to configure the common options
 - add the option to turn off rate-limiting as well as to set times for rate limiting

@@ -2,6 +2,7 @@ import json
 import os
 
 config_directory = os.getcwd() + "/configs"
+download_dir = f"{os.path.expanduser('~')}/Videos/Youtube"
 already_watched = {}
 ignored = {}
 broken_videos: dict[str, list] = {}
@@ -179,7 +180,6 @@ def read_shorts_allowed():
         shorts_allowed = {}
 
 
-
 def read_config_files():
     read_already_watched()
     read_ignored()
@@ -190,3 +190,39 @@ def read_config_files():
 
 def get_shorts_allowed():
     return shorts_allowed
+
+
+def simulate_directories(new_download_dir, new_config_directory):
+    if new_download_dir is not None:
+        #new_download_dir = os.path.normpath(new_download_dir)
+        print(new_download_dir)
+        os.chdir(new_download_dir)
+        print(os.getcwd())
+        print(os.listdir())
+    if new_config_directory is not None:
+        #new_config_directory = os.path.normpath(new_config_directory)
+        print(new_config_directory)
+        os.chdir(new_config_directory)
+        print(os.getcwd())
+        print(os.listdir())
+
+
+
+def set_directories(new_download_directory, new_config_directory, simulate):
+    global download_dir
+    global config_directory
+    if simulate == 'True':
+        simulate_directories(new_download_directory, new_config_directory)
+        return False
+
+    if new_download_directory is not None:
+        download_dir = new_download_directory
+
+    if new_config_directory is not None:
+        config_directory = new_config_directory
+
+    return True
+
+
+def get_download_dir():
+    return download_dir

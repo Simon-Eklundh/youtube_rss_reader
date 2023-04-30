@@ -1,3 +1,4 @@
+import argparse
 import pathlib
 
 import feedparser
@@ -6,7 +7,8 @@ from yt_dlp import YoutubeDL
 
 import youtubedl_handler
 from file_handler import read_config_files, read_channel_dict, read_legacy_channel_converter_dict_lists, \
-    create_channels_from_new_format, read_legacy_channel_lists, save_channel_dict, save_legacy_converter_dict
+    create_channels_from_new_format, read_legacy_channel_lists, save_channel_dict, save_legacy_converter_dict, \
+    set_directories, get_download_dir
 from youtubedl_handler import download_videos
 
 
@@ -32,7 +34,24 @@ def get_channel_feed(channel):
     return channel_rss_feed
 
 
+def init():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config_dir", help="the location of the config, default is in the program src directory")
+    parser.add_argument("--download_dir", help="directory to download to, default is ~/Videos/Youtube")
+    parser.add_argument("--simulate",
+                        help="simulates the values to check that you didn't mistakenly add a broken or incorrect path")
+    args = parser.parse_args()
+    download_dir = args.download_dir
+    config_dir = args.config_dir
+    simulate = args.simulate
+    result = set_directories(download_dir, config_dir, simulate)
+    return result
+
+
+
 def main():
+    if not init():
+        return
     read_config_files()
 
     # legacy
@@ -45,7 +64,7 @@ def main():
     channel_dict = create_channels_from_new_format(channel_dict)
     print("all channels added")
 
-    download_dir = f"{os.path.expanduser('~')}/Videos/Youtube"
+    download_dir = get_download_dir()
     os.chdir(download_dir)
 
     download_and_sponsorblock_videos(channel_dict)
@@ -90,16 +109,9 @@ def create_channel_dict_from_legacy():
 
 # test area, gets reused whenever a bug exists
 def _tester():
-    # todo make this download based on an ai with self-learning skip options?
     # todo add commandline options for setting download dir, config dir, and a test option to show where it's looking and if it's the correct directory
-    opts = youtubedl_handler.setup_downloader_options("unused")
-    with YoutubeDL(opts) as ydl:
-        try:
-            print(os.getcwd())
-            ydl.download("https://www.youtube.com/watch?v=i6H9ldE-M-Y")
+    print("tester")
 
-        except Exception as e:
-            print()
 
 
 
