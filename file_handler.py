@@ -213,7 +213,7 @@ def simulate_directories(new_download_dir, new_config_directory):
 def set_directories(new_download_directory, new_config_directory, simulate):
     global download_dir
     global config_directory
-    if simulate == 'True':
+    if simulate is True:
         simulate_directories(new_download_directory, new_config_directory)
         return False
 

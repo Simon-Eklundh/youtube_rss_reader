@@ -10,7 +10,7 @@ There are three (3) options for commandline variables:
 
 1. --config_dir="config_directory_path"
 2. --download_dir="download_directory_path". This excludes a ./Youtube path which will be created if it doesn't exist
-3. --simulate=True/anything else.  Simulate prints your chosen directories and what's in them before exiting. Use this any time you change the paths! 
+3. --simulate. Simulate prints your chosen directories and what's in them before exiting. Use this any time you change the paths! 
 
 ### for new users
 

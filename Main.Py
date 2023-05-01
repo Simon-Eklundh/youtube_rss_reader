@@ -38,12 +38,14 @@ def init():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_dir", help="the location of the config, default is in the program src directory")
     parser.add_argument("--download_dir", help="directory to download to, default is C:\\\\Users/[your name]/Videos/Youtube")
-    parser.add_argument("--simulate",
+    parser.add_argument("--simulate", action="store_true",
                         help="simulates the values to check that you didn't mistakenly add a broken or incorrect path")
     args = parser.parse_args()
     download_dir = args.download_dir
     config_dir = args.config_dir
-    simulate = args.simulate
+    simulate = False
+    if args.simulate is not None:
+        simulate = True
     result = set_directories(download_dir, config_dir, simulate)
     return result
 
