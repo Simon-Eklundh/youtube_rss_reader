@@ -9,8 +9,8 @@ reads a list of YouTube channels (by channel ids or linkx) and downloads any new
 There are three (3) options for commandline variables:
 
 1. --config_dir="config_directory_path"
-2. --download_dir="download_directory_path"
-3. --simulate=True/anything else.  Simulate prints your chosen directories and what's in them before exiting. Use this any time you change the variables! 
+2. --download_dir="download_directory_path". This excludes a ./Youtube path which will be created if it doesn't exist
+3. --simulate=True/anything else.  Simulate prints your chosen directories and what's in them before exiting. Use this any time you change the paths! 
 
 ### for new users
 

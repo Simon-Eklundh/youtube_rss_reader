@@ -2,7 +2,7 @@ import json
 import os
 
 config_directory = os.getcwd() + "/configs"
-download_dir = f"{os.path.expanduser('~')}/Videos/Youtube"
+download_dir = f"{os.path.expanduser('~')}/Videos/"
 already_watched = {}
 ignored = {}
 broken_videos: dict[str, list] = {}
@@ -128,6 +128,8 @@ def save_legacy_converter_dict(legacy):
 
 
 def create_channels_from_new_format(channel_dict: dict[str, dict[str, str]]):
+    if not os.path.exists("./categories"):
+        return channel_dict
     for file in os.listdir("./categories"):
         if file.rstrip(".json") not in channel_dict:
             channel_dict[file.rstrip(".json")] = {}
