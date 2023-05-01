@@ -43,9 +43,7 @@ def init():
     args = parser.parse_args()
     download_dir = args.download_dir
     config_dir = args.config_dir
-    simulate = False
-    if args.simulate is not None:
-        simulate = True
+    simulate = args.simulate
     result = set_directories(download_dir, config_dir, simulate)
     return result
 
