@@ -54,6 +54,7 @@ def file_sorter(e: str):
     key: int = int(out[len(out) - 1].split(".")[0])
     return key
 
+
 def rename_clips_in_order(file_name):
     files = []
     clip_index = 0
@@ -71,21 +72,44 @@ def rename_clips_in_order(file_name):
         os.rename(file_dict[file], file)
 
 
-def create_clips_of_the_parts_to_leave_in(file_name, segments, file_type):
-    current_start = "00:00:00"
-    os.rename(file_name + "." + file_type, file_name + "_0."+file_type)
-    clip_index = 1
+# remove any duplicate segments to make sure cutting works perfectly (wouldn't work if I change which segment types are allowed)
+def fix_segments(segments):
+    new_segments = []
     for segment in segments:
-        start = segment.start
-        end = segment.end
+        skip = False
+        for seg in new_segments:
+            if segment.start > seg.start and seg.end > segment.end:
+                skip = True
+                break
+
+            if seg.start < segment.start < seg.end < segment.end:
+                seg.end = segment.end
+                skip = True
+        if not skip:
+            new_segments.append(segment)
+
+    return new_segments
+
+
+def create_clips_of_the_parts_to_leave_in(file_name, segments, file_type):
+    current_start: float = 0.0
+    os.rename(file_name + "." + file_type, file_name + "_0." + file_type)
+    clip_index = 1
+    segments = fix_segments(segments)
+    for segment in segments:
+        start: float = segment.start
+        end: float = segment.end
 
         subprocess.call(
             f"""ffmpeg -y -ss {current_start} -to {start} -i "{file_name}_0.{file_type}" -c copy "{file_name}_{clip_index}.{file_type}" """
         )
         clip_index += 1
-        current_start = end
+        current_start: float = end
+    # No end time to get the final part of the video
+    subprocess.call(
+        f"""ffmpeg -y -ss {current_start} -i "{file_name}_0.{file_type}" -c copy "{file_name}_{clip_index}.{file_type}" """
+    )
     for file in os.listdir('.'):
-        if fnmatch.fnmatch(file, file_name+"_[^1-9]."+file_type):
-            os.remove(file_name+"_0."+file_type)
+        if fnmatch.fnmatch(file, file_name + "_[^1-9]." + file_type):
+            os.remove(file_name + "_0." + file_type)
             return
-

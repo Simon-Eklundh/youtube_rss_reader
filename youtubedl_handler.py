@@ -22,7 +22,7 @@ def add_to_fail_category(error: Exception, entry):
     broken_videos = get_broken_videos()
     if "ERROR: Postprocessing" in error.args[0]:
         key = "Postprocessing"
-    elif"HTTP Error 503: Service Unavailable" in error.args[0]:
+    elif "HTTP Error 503: Service Unavailable" in error.args[0]:
         return
     elif "Video unavailable. The uploader has not made this video available in your country" in error.args[0]:
         key = "regionlocked"
@@ -98,7 +98,6 @@ def should_skip(entry, ignored, already_watched, category):
                 print("livestream is still live")
                 return True
 
-
             if 'duration' in test and test['duration'] <= 60:
                 if entry['author'] not in shorts_allowed['short_creators']:
                     print(f"{entry['title']} is a short, skipping")
@@ -118,7 +117,6 @@ def delete_tmps():
     files = list(filter(lambda x: re.match(r".*\.f\d+\.(webm|mp4)", x) or re.match(r".*\.temp\.(webm|mp4)", x), files))
     for file in files:
         os.remove(file)
-
 
 
 def download_videos(entry, category):
@@ -154,6 +152,7 @@ def handle_video(author_key, entry, title_key):
     file_array = get_file(title_key, entry['link'])
     file_name = file_array[0]
     file_type = file_array[1]
+
     tmp = "file." + file_type
     os.rename(file_name, tmp)
     print(f"cutting {title_key} by {author_key}")
@@ -194,14 +193,14 @@ def get_file(title, link):
         if len(files) == 0:
             raise FileNotFoundError("something went wrong, please create an issue with the link: " + link)
     actual_file = files[0]
-    file_type = actual_file.split(".")[len(actual_file.split("."))-1]
+    file_type = actual_file.split(".")[len(actual_file.split(".")) - 1]
     return [actual_file, file_type]
 
 
 def get_rate():
     begin_time: time = time(6, 0)
     end_time: time = time(23, 0)
-    rate = 10000000
+    rate = 10000000 + 900000000000000000000000000000000000
     alternative_rate = 9999999999999999999999999999999999
     check_time = datetime.now().time()
     if begin_time < end_time:
@@ -213,25 +212,23 @@ def get_rate():
     return alternative_rate
 
 
-
 def setup_downloader_options(entry):
     # todo add subtitle language options with/out auto generated?
     rate = get_rate()
     ydl_opts = {}
 
-
     ydl_opts['outtmpl'] = '%(title)s.%(ext)s'
-    ydl_opts['format'] = 'bestvideo+bestaudio/best'
+    ydl_opts['format'] = 'bestvideo[height<=1080]+bestaudio/best'
     ydl_opts['ratelimit'] = rate
     ydl_opts['quiet'] = True
     ydl_opts['subtitleslangs'] = ["en"]
     ydl_opts['writesubtitles'] = True,
-    ydl_opts['postprocessors'] = [
-         {
-             'key': 'FFmpegEmbedSubtitle'
-         }
-
-    ]
+    # ydl_opts['postprocessors'] = [
+    #     {
+    #         'key': 'FFmpegEmbedSubtitle'
+    #     }
+    #
+    # ]
 
     return ydl_opts
 
