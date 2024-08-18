@@ -1,12 +1,14 @@
 import os
 import pathlib
 import re
-from datetime import time, datetime
+from collections import defaultdict
+from datetime import time, datetime, timedelta
 
 from yt_dlp import YoutubeDL
 
+import sponsorblock_handler
 from file_handler import get_already_watched, get_ignored, save_downloaded_list, save_ignored, get_broken_videos, \
-    save_broken_videos, get_keywords_to_skip, get_shorts_allowed
+    save_broken_videos, get_keywords_to_skip, get_shorts_allowed, get_word_probabilities
 from sponsorblock_handler import cut_sponsored_segments
 
 
@@ -109,7 +111,54 @@ def should_skip(entry, ignored, already_watched, category):
             add_to_fail_category(error, entry)
             return True
 
-    return False
+    return not should_skip_ai(entry['title'])
+
+
+# Function to extract innermost values
+def extract_innermost_values(d):
+    innermost_values = []
+    for key, value in d.items():
+        if isinstance(value, dict):
+            innermost_values.extend(extract_innermost_values(value))
+        elif isinstance(value, list):
+            innermost_values.extend(value)
+    return innermost_values
+
+
+def should_skip_ai(title):
+    words = title.lower().split()
+    should_skip = 1.0
+    should_keep = 1.0
+
+    word_probabilities = get_word_probabilities()
+    always_no_words = get_keywords_to_skip()
+    always_no_words = extract_innermost_values(always_no_words)
+    for word in words:
+        if word in always_no_words:
+            return True
+        should_skip *= word_probabilities[word][True]
+        should_keep *= word_probabilities[word][False]
+
+    total_prob = should_skip + should_keep
+    should_skip /= total_prob
+    should_keep /= total_prob
+
+    if should_skip == 1.0 or should_keep == 1.0:
+        return should_skip > should_keep
+    if input("should we keep this video? " + title + " 1 = yes, 0 = no") == "1":
+        while input("did a word make you say yes? 1 = yes, 0 = no [" + ','.join(words) + "]") == "1":
+            index = int(input("what's the index of the word? "))
+            word = words[index]
+            word_probabilities[word][True] = 0
+            word_probabilities[word][False] = 1
+        return True
+    else:
+        while input("did a word make you say no? " + ','.join(words)) == "1":
+            word = words[input("what's the index of the word? ")]
+            word_probabilities[word][True] = 1
+            word_probabilities[word][False] = 0
+        return False
+
 
 
 def delete_tmps():
@@ -133,9 +182,18 @@ def download_videos(entry, category):
 
     if pathlib.Path(author_key).is_dir() is False:
         pathlib.Path(author_key).mkdir(parents=True, exist_ok=True)
-    os.chdir(author_key)
+
     ydl_opts = setup_downloader_options(entry)
 
+    try:
+        sponsorblock_handler.get_segments_to_remove(entry['link'])
+    except:
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(entry['link'], False)
+            if not datetime.strptime(info['release_date'], "%Y%m%d") < datetime.now() - timedelta(days=7):
+                return
+
+    os.chdir(author_key)
     if not download_video(author_key, entry, title_key, ydl_opts, category):
         delete_tmps()
         os.chdir("../")
@@ -218,18 +276,11 @@ def setup_downloader_options(entry):
     ydl_opts = {}
 
     ydl_opts['outtmpl'] = '%(title)s.%(ext)s'
-    ydl_opts['format'] = 'bestvideo[height<=1080]+bestaudio/best'
+    ydl_opts['format'] = 'bestvideo+bestaudio/best'
     ydl_opts['ratelimit'] = rate
     ydl_opts['quiet'] = True
     ydl_opts['subtitleslangs'] = ["en"]
     ydl_opts['writesubtitles'] = True,
-    # ydl_opts['postprocessors'] = [
-    #     {
-    #         'key': 'FFmpegEmbedSubtitle'
-    #     }
-    #
-    # ]
-
     return ydl_opts
 
 

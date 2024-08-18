@@ -1,5 +1,8 @@
 import json
 import os
+import pickle
+from collections import defaultdict
+from yt_dlp import YoutubeDL
 
 config_directory = os.getcwd() + "/configs"
 download_dir = f"{os.path.expanduser('~')}/Videos/"
@@ -9,7 +12,7 @@ broken_videos: dict[str, list] = {}
 keywords_to_skip: dict[str, list] = {}
 channels = {}
 shorts_allowed = []
-from yt_dlp import YoutubeDL
+word_probabilities = {}
 
 
 def read_file(file_name):
@@ -56,6 +59,25 @@ def read_already_watched():
         already_watched = json.load(f)
     except:
         already_watched = {}
+
+
+def set_word_probabilities():
+    with open('word_probabilities.pkl', 'wb') as f:
+        pickle.dump(word_probabilities, f)
+
+
+def get_word_probabilities():
+    return word_probabilities
+
+
+def read_word_probabilities():
+    try:
+        with open('word_probabilities.pkl', 'rb') as f:
+            data = pickle.load(f)
+        global word_probabilities
+        word_probabilities = data
+    except:
+        word_probabilities = defaultdict(lambda: {True: 0.5, False: 0.5})
 
 
 def get_already_watched():
@@ -183,11 +205,13 @@ def read_shorts_allowed():
 
 
 def read_config_files():
+    read_word_probabilities()
     read_already_watched()
     read_ignored()
     read_not_working_videos()
     read_keywords_to_skip()
     read_shorts_allowed()
+
 
 
 def get_shorts_allowed():
@@ -207,7 +231,6 @@ def simulate_directories(new_download_dir, new_config_directory):
         os.chdir(new_config_directory)
         print(os.getcwd())
         print(os.listdir())
-
 
 
 def set_directories(new_download_directory, new_config_directory, simulate):

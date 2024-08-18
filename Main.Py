@@ -2,8 +2,10 @@ import argparse
 import pathlib
 
 import feedparser
+import yt_dlp.YoutubeDL
 from moviepy.editor import *
 from yt_dlp import YoutubeDL
+import sponsorblock as sb
 
 import youtubedl_handler
 from file_handler import read_config_files, read_channel_dict, read_legacy_channel_converter_dict_lists, \
@@ -113,13 +115,13 @@ def create_channel_dict_from_legacy():
 # test area, gets reused whenever a bug exists
 def _tester():
     # todo add commandline options for setting download dir, config dir, and a test option to show where it's looking and if it's the correct directory
-    print("tester")
+    print("tmp")
 
 
 
 
 if __name__ == '__main__':
     main()
-    #_tester()
+    # _tester()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

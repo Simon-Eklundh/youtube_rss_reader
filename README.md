@@ -1,5 +1,12 @@
 # YouTube_rss_reader
 
+# IMPORTANT:
+
+THIS IS CURRENTLY WRITTEN FOR THE LEGACY VERSION, THE NEW VERSION WILL NEED A NEW README
+
+
+### old
+
 reads a list of YouTube channels (by channel ids or linkx) and downloads any new video from said channels
 
 ## How to use
