@@ -111,7 +111,7 @@ def should_skip(entry, ignored, already_watched, category):
             add_to_fail_category(error, entry)
             return True
 
-    return not should_skip_ai(entry['title'])
+    return should_skip_ai(entry['title'])
 
 
 # Function to extract innermost values
