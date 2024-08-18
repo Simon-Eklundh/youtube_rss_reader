@@ -3,12 +3,8 @@ import datetime
 import pathlib
 
 import feedparser
-import yt_dlp.YoutubeDL
 from moviepy.editor import *
-from yt_dlp import YoutubeDL
-import sponsorblock as sb
 
-import youtubedl_handler
 from file_handler import read_config_files, read_channel_dict, read_legacy_channel_converter_dict_lists, \
     create_channels_from_new_format, read_legacy_channel_lists, save_channel_dict, save_legacy_converter_dict, \
     set_directories, get_download_dir

@@ -1,10 +1,10 @@
 import fnmatch
 import os
-import re
+
 import subprocess
 
 import sponsorblock as sb
-from unidecode import unidecode
+
 
 
 def get_segments_to_remove(url):

@@ -151,13 +151,14 @@ def should_skip_ai(title):
             word = words[index]
             word_probabilities[word][True] = 0
             word_probabilities[word][False] = 1
-        return True
+        return False
     else:
         while input("did a word make you say no? " + ','.join(words)) == "1":
-            word = words[input("what's the index of the word? ")]
+            index = int(input("what's the index of the word? "))
+            word = words[index]
             word_probabilities[word][True] = 1
             word_probabilities[word][False] = 0
-        return False
+        return True
 
 
 
@@ -190,7 +191,7 @@ def download_videos(entry, category):
     except:
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(entry['link'], False)
-            if not datetime.strptime(info['release_date'], "%Y%m%d") < datetime.now() - timedelta(days=7):
+            if not datetime.strptime(info['upload_date'], "%Y%m%d") < datetime.now() - timedelta(days=7):
                 return
 
     os.chdir(author_key)
