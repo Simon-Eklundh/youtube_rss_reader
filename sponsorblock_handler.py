@@ -10,20 +10,15 @@ from unidecode import unidecode
 def get_segments_to_remove(url):
     client = sb.Client()
     # get sponsor segments from sponsorblock (including sponsors, intro, outro and interaction reminders)
-    segments = client.get_skip_segments(url)
+    segments = client.get_skip_segments(url, categories=["sponsor", "selfpromo", "interaction", "intro", "outro", "preview"])
     return segments
 
 
-def cut_sponsored_segments(file_name, url, file_type):
-    # this uses an api call which returns a 404 if the video isn't in sponsorblock. if it returns an error, we don't cut
-    # maybe reduce these calls somehow (self-hosting?) left for last
-    # if I can be bothered I will change this to have optional cuts
-    try:
-        segments: list[sb.Segment] = get_segments_to_remove(url)
-    except:
-        return
+def cut_sponsored_segments(file_name, file_type, sponsorblock_segments):
 
-    create_clips_of_the_parts_to_leave_in(file_name, segments, file_type)
+    if sponsorblock_segments is None:
+        return
+    create_clips_of_the_parts_to_leave_in(file_name, sponsorblock_segments, file_type)
 
     create_clip_file_list(file_name)
     # concatenate all the clips in order into a single video

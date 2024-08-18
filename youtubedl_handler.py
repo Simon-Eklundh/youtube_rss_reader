@@ -184,9 +184,9 @@ def download_videos(entry, category):
         pathlib.Path(author_key).mkdir(parents=True, exist_ok=True)
 
     ydl_opts = setup_downloader_options(entry)
-
+    sponsorblock_segments = None
     try:
-        sponsorblock_handler.get_segments_to_remove(entry['link'])
+        sponsorblock_segments = sponsorblock_handler.get_segments_to_remove(entry['link'])
     except:
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(entry['link'], False)
@@ -199,14 +199,14 @@ def download_videos(entry, category):
         os.chdir("../")
         return
 
-    actual_file = handle_video(author_key, entry, title_key)
+    actual_file = handle_video(author_key, entry, title_key, sponsorblock_segments)
     already_watched[author_key][title_key] = 1
     os.chdir("..")
     print("New video from " + author_key + ": " + actual_file + " has been downloaded and cut")
     save_downloaded_list()
 
 
-def handle_video(author_key, entry, title_key):
+def handle_video(author_key, entry, title_key, sponsorblock_segments):
     file_array = get_file(title_key, entry['link'])
     file_name = file_array[0]
     file_type = file_array[1]
@@ -214,7 +214,7 @@ def handle_video(author_key, entry, title_key):
     tmp = "file." + file_type
     os.rename(file_name, tmp)
     print(f"cutting {title_key} by {author_key}")
-    cut_sponsored_segments(re.sub(f".{file_type}", "", tmp), entry['link'], file_type)
+    cut_sponsored_segments(re.sub(f".{file_type}", "", tmp), file_type, sponsorblock_segments)
     print(f"done cutting {title_key} by {author_key}")
     new_title = file_name
     if file_name in os.listdir():
