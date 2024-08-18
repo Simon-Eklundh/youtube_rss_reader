@@ -8,7 +8,7 @@ from yt_dlp import YoutubeDL
 
 import sponsorblock_handler
 from file_handler import get_already_watched, get_ignored, save_downloaded_list, save_ignored, get_broken_videos, \
-    save_broken_videos, get_keywords_to_skip, get_shorts_allowed, get_word_probabilities
+    save_broken_videos, get_keywords_to_skip, get_shorts_allowed, get_word_probabilities, save_word_probabilities
 from sponsorblock_handler import cut_sponsored_segments
 
 
@@ -151,6 +151,7 @@ def should_skip_ai(title):
             word = words[index]
             word_probabilities[word][True] = 0
             word_probabilities[word][False] = 1
+            save_word_probabilities()
         return False
     else:
         while input("did a word make you say no? " + ','.join(words)) == "1":
@@ -158,6 +159,7 @@ def should_skip_ai(title):
             word = words[index]
             word_probabilities[word][True] = 1
             word_probabilities[word][False] = 0
+            save_word_probabilities()
         return True
 
 
@@ -181,8 +183,6 @@ def download_videos(entry, category):
         save_ignored()
         return
 
-    if pathlib.Path(author_key).is_dir() is False:
-        pathlib.Path(author_key).mkdir(parents=True, exist_ok=True)
 
     ydl_opts = setup_downloader_options(entry)
     sponsorblock_segments = None
@@ -194,15 +194,12 @@ def download_videos(entry, category):
             if not datetime.strptime(info['upload_date'], "%Y%m%d") < datetime.now() - timedelta(days=7):
                 return
 
-    os.chdir(author_key)
     if not download_video(author_key, entry, title_key, ydl_opts, category):
         delete_tmps()
-        os.chdir("../")
         return
 
     actual_file = handle_video(author_key, entry, title_key, sponsorblock_segments)
     already_watched[author_key][title_key] = 1
-    os.chdir("..")
     print("New video from " + author_key + ": " + actual_file + " has been downloaded and cut")
     save_downloaded_list()
 

@@ -16,20 +16,16 @@ def download_and_sponsorblock_videos(categories):
     # if category is not an existing folder, create it
     today = datetime.datetime.today().strftime('%Y-%m-%d')
     for category in categories:
-
-        if pathlib.Path(category).is_dir() is False:
-            pathlib.Path(category).mkdir(parents=True, exist_ok=True)
-        os.chdir(category)
-        if pathlib.Path(today).is_dir() is False:
-            pathlib.Path(today).mkdir(parents=True, exist_ok=True)
-        os.chdir(today)
+        if pathlib.Path(category+today).is_dir() is False:
+            pathlib.Path(category+today).mkdir(parents=True, exist_ok=True)
+        os.chdir(category+today)
         for channel in categories[category]:
             channel_rss_feed = get_channel_feed(categories[category][channel])
 
             for entry in channel_rss_feed['entries']:
                 download_videos(entry, category)
 
-        os.chdir("../../")
+        os.chdir("../")
 
 
 def get_channel_feed(channel):

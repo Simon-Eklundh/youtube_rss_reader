@@ -61,7 +61,7 @@ def read_already_watched():
         already_watched = {}
 
 
-def set_word_probabilities():
+def save_word_probabilities():
     with open('word_probabilities.pkl', 'wb') as f:
         pickle.dump(word_probabilities, f)
 
