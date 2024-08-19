@@ -8,7 +8,8 @@ from yt_dlp import YoutubeDL
 
 import sponsorblock_handler
 from file_handler import get_already_watched, get_ignored, save_downloaded_list, save_ignored, get_broken_videos, \
-    save_broken_videos, get_keywords_to_skip, get_shorts_allowed, get_word_probabilities, save_word_probabilities
+    save_broken_videos, get_keywords_to_skip, get_shorts_allowed, get_word_probabilities, save_word_probabilities, \
+    get_checked_titles, checked_titles, save_checked_titles
 from sponsorblock_handler import cut_sponsored_segments
 
 
@@ -129,12 +130,16 @@ def should_skip_ai(title):
     words = title.lower().split()
     should_skip = 1.0
     should_keep = 1.0
-
+    checked_titles = get_checked_titles()
+    if title in checked_titles:
+        return checked_titles.get(title)
     word_probabilities = get_word_probabilities()
     always_no_words = get_keywords_to_skip()
     always_no_words = extract_innermost_values(always_no_words)
     for word in words:
         if word in always_no_words:
+            return True
+        if word_probabilities[word][True] == 1:
             return True
         should_skip *= word_probabilities[word][True]
         should_keep *= word_probabilities[word][False]
@@ -146,20 +151,38 @@ def should_skip_ai(title):
     if should_skip == 1.0 or should_keep == 1.0:
         return should_skip > should_keep
     if input("should we keep this video? " + title + " 1 = yes, 0 = no") == "1":
+        for word in words:
+            word_probabilities[word][True] = word_probabilities[word][True] - 0.01
+            if word_probabilities[word][True] <= 0:
+                word_probabilities[word][True] = 0
+            word_probabilities[word][False] = word_probabilities[word][False] + 0.01
+            if word_probabilities[word][False] >= 1:
+                word_probabilities[word][False] = 1
         while input("did a word make you say yes? 1 = yes, 0 = no [" + ','.join(words) + "]") == "1":
             index = int(input("what's the index of the word? "))
             word = words[index]
             word_probabilities[word][True] = 0
             word_probabilities[word][False] = 1
             save_word_probabilities()
+        checked_titles[title] = False
+        save_checked_titles()
         return False
     else:
+        for word in words:
+            word_probabilities[word][True] = word_probabilities[word][True] + 0.01
+            if word_probabilities[word][True] >= 1:
+                word_probabilities[word][True] = 1
+            word_probabilities[word][False] = word_probabilities[word][False] - 0.01
+            if word_probabilities[word][False] <= 0:
+                word_probabilities[word][False] = 0
         while input("did a word make you say no? " + ','.join(words)) == "1":
             index = int(input("what's the index of the word? "))
             word = words[index]
             word_probabilities[word][True] = 1
             word_probabilities[word][False] = 0
             save_word_probabilities()
+        checked_titles[title] = True
+        save_checked_titles()
         return True
 
 

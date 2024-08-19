@@ -13,6 +13,7 @@ keywords_to_skip: dict[str, list] = {}
 channels = {}
 shorts_allowed = []
 word_probabilities = {}
+checked_titles = {}
 
 
 def read_file(file_name):
@@ -62,8 +63,9 @@ def read_already_watched():
 
 
 def save_word_probabilities():
-    with open('word_probabilities.pkl', 'wb') as f:
-        pickle.dump(word_probabilities, f)
+    tmp = dict(word_probabilities)
+    with open(config_directory + '/word_probabilities.json', 'w') as f:
+        json.dump(tmp, f)
 
 
 def get_word_probabilities():
@@ -72,10 +74,13 @@ def get_word_probabilities():
 
 def read_word_probabilities():
     try:
-        with open('word_probabilities.pkl', 'rb') as f:
-            data = pickle.load(f)
+        with open(config_directory + '/word_probabilities.json', 'r') as f:
+            data = json.load(f)
         global word_probabilities
-        word_probabilities = data
+        tmp = data
+        word_probabilities = defaultdict(lambda: {True: 0.5, False: 0.5})
+        for word, probabilities in tmp.items():
+            word_probabilities[word].update(probabilities)
     except:
         word_probabilities = defaultdict(lambda: {True: 0.5, False: 0.5})
 
@@ -211,7 +216,7 @@ def read_config_files():
     read_not_working_videos()
     read_keywords_to_skip()
     read_shorts_allowed()
-
+    read_checked_titles()
 
 
 def get_shorts_allowed():
@@ -251,3 +256,21 @@ def set_directories(new_download_directory, new_config_directory, simulate):
 
 def get_download_dir():
     return download_dir
+
+
+def get_checked_titles():
+    return checked_titles
+
+def save_checked_titles():
+    with open(config_directory + '/checked_titles.json', 'w', encoding='utf-8') as outfile:
+        json.dump(checked_titles, outfile, indent=4)
+
+
+def read_checked_titles():
+    try:
+        f = open(config_directory + "/checked_titles.json", encoding='utf-8')
+        global checked_titles
+        checked_titles = json.load(f)
+    except:
+        checked_titles = {}
+    return checked_titles
