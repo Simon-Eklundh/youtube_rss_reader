@@ -1,6 +1,8 @@
 import os
 import pathlib
 import re
+import shutil
+import subprocess
 from collections import defaultdict
 from datetime import time, datetime, timedelta
 
@@ -132,8 +134,7 @@ def should_skip_ai(title):
     should_keep = 1.0
     checked_titles = get_checked_titles()
     if title in checked_titles:
-        return checked_titles.get(title)
-    word_probabilities = get_word_probabilities()
+        word_probabilities = get_word_probabilities()
     always_no_words = get_keywords_to_skip()
     always_no_words = extract_innermost_values(always_no_words)
     for word in words:
@@ -143,11 +144,10 @@ def should_skip_ai(title):
             return True
         should_skip *= word_probabilities[word][True]
         should_keep *= word_probabilities[word][False]
-
     total_prob = should_skip + should_keep
     should_skip /= total_prob
     should_keep /= total_prob
-
+    skip_decision = False
     if should_skip == 1.0 or should_keep == 1.0:
         return should_skip > should_keep
     if input("should we keep this video? " + title + " 1 = yes, 0 = no") == "1":
@@ -158,15 +158,6 @@ def should_skip_ai(title):
             word_probabilities[word][False] = word_probabilities[word][False] + 0.01
             if word_probabilities[word][False] >= 1:
                 word_probabilities[word][False] = 1
-        while input("did a word make you say yes? 1 = yes, 0 = no [" + ','.join(words) + "]") == "1":
-            index = int(input("what's the index of the word? "))
-            word = words[index]
-            word_probabilities[word][True] = 0
-            word_probabilities[word][False] = 1
-            save_word_probabilities()
-        checked_titles[title] = False
-        save_checked_titles()
-        return False
     else:
         for word in words:
             word_probabilities[word][True] = word_probabilities[word][True] + 0.01
@@ -175,16 +166,10 @@ def should_skip_ai(title):
             word_probabilities[word][False] = word_probabilities[word][False] - 0.01
             if word_probabilities[word][False] <= 0:
                 word_probabilities[word][False] = 0
-        while input("did a word make you say no? " + ','.join(words)) == "1":
-            index = int(input("what's the index of the word? "))
-            word = words[index]
-            word_probabilities[word][True] = 1
-            word_probabilities[word][False] = 0
-            save_word_probabilities()
-        checked_titles[title] = True
-        save_checked_titles()
-        return True
-
+    save_word_probabilities()
+    checked_titles[title] = skip_decision
+    save_checked_titles()
+    return skip_decision
 
 
 def delete_tmps():
@@ -205,7 +190,6 @@ def download_videos(entry, category):
     if should_skip(entry, ignored, already_watched, category):
         save_ignored()
         return
-
 
     ydl_opts = setup_downloader_options(entry)
     sponsorblock_segments = None
@@ -247,9 +231,10 @@ def handle_video(author_key, entry, title_key, sponsorblock_segments):
 def download_video(author_key, entry, title_key, ydl_opts, category):
     with YoutubeDL(ydl_opts) as ydl:
         try:
-            print(f"Downloading {title_key} by {author_key} from category {category}")
 
-            ydl.download([entry['link']])
+            print(f"Downloading {title_key} by {author_key} from category {category}")
+            # download the video and the metadata
+            ydl.extract_info(entry['link'], download=True)
             print(f"Downloaded {title_key} by {author_key}")
         except Exception as e:
             add_to_fail_category(e, entry)
@@ -295,9 +280,10 @@ def setup_downloader_options(entry):
     # todo add subtitle language options with/out auto generated?
     rate = get_rate()
     ydl_opts = {}
-
+    ydl_opts['writeinfojson'] = True
+    ydl_opts['writethumbnail'] = True
     ydl_opts['outtmpl'] = '%(title)s.%(ext)s'
-    ydl_opts['format'] = 'bestvideo+bestaudio/best'
+    ydl_opts['format'] = 'best'
     ydl_opts['ratelimit'] = rate
     ydl_opts['quiet'] = True
     ydl_opts['subtitleslangs'] = ["en"]
