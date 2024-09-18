@@ -207,6 +207,8 @@ Python 3.6 or higher
 pip  
 all the requirements in the requirements.txt file
 ffmpeg installed in your os
+simplepush installed on your phone (or somewhere else)
+an environment variable named SIMPLEPUSH_KEY with the value of your simplepush key
 
 ## Installation
 
