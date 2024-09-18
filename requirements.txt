@@ -1,5 +1,6 @@
 sponsorblock~=0.1.3
 feedparser~=6.0.10
 moviepy~=1.0.3
-Unidecode~=1.3.6
 yt-dlp~=2024.8.1
+simplepush~=2.2.3
+python-dotenv~=1.0.1

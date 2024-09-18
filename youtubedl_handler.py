@@ -5,14 +5,30 @@ import shutil
 import subprocess
 from collections import defaultdict
 from datetime import time, datetime, timedelta
-
+import simplepush
+from threading import Event
 from yt_dlp import YoutubeDL
-
+from dotenv import load_dotenv
 import sponsorblock_handler
 from file_handler import get_already_watched, get_ignored, save_downloaded_list, save_ignored, get_broken_videos, \
     save_broken_videos, get_keywords_to_skip, get_shorts_allowed, get_word_probabilities, save_word_probabilities, \
-    get_checked_titles, checked_titles, save_checked_titles
+    get_checked_titles, checked_titles, save_checked_titles, word_probabilities
 from sponsorblock_handler import cut_sponsored_segments
+
+notification_result = None
+callback_event = Event()
+
+# Load environment variables from the .env file
+load_dotenv()
+
+# get simplepush key from env
+simplepush_key = os.getenv("SIMPLEPUSH_KEY")
+
+
+def callback(action_selected, action_selected_at, action_delivered_at, feedback_id):
+    global notification_result
+    notification_result = action_selected
+    callback_event.set()
 
 
 def is_in_fail_categories(link):
@@ -114,7 +130,7 @@ def should_skip(entry, ignored, already_watched, category):
             add_to_fail_category(error, entry)
             return True
 
-    return should_skip_ai(entry['title'])
+    return should_skip_ai(entry['title'], entry['author'])
 
 
 # Function to extract innermost values
@@ -128,13 +144,13 @@ def extract_innermost_values(d):
     return innermost_values
 
 
-def should_skip_ai(title):
+def should_skip_ai(title, author):
     words = title.lower().split()
     should_skip = 1.0
     should_keep = 1.0
     checked_titles = get_checked_titles()
-    if title in checked_titles:
-        word_probabilities = get_word_probabilities()
+    word_probabilities = get_word_probabilities()
+
     always_no_words = get_keywords_to_skip()
     always_no_words = extract_innermost_values(always_no_words)
     for word in words:
@@ -150,7 +166,17 @@ def should_skip_ai(title):
     skip_decision = False
     if should_skip == 1.0 or should_keep == 1.0:
         return should_skip > should_keep
-    if input("should we keep this video? " + title + " 1 = yes, 0 = no") == "1":
+    message = "do you want to keep " + title + " by " + author + "?"
+    callback_event.clear()
+    simplepush.send(
+        key=simplepush_key,
+        message=message,
+        actions=['yes', 'no'],
+        feedback_callback=callback
+    )
+    # Wait for the callback to be called
+    callback_event.wait()
+    if notification_result == "yes":
         for word in words:
             word_probabilities[word][True] = word_probabilities[word][True] - 0.01
             if word_probabilities[word][True] <= 0:
